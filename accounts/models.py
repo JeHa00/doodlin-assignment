@@ -1,5 +1,8 @@
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import RegexValidator
+from django.core.validators import (
+    RegexValidator,
+    MinLengthValidator,
+)
 from django.conf import settings
 from django.db import models
 
