@@ -37,6 +37,10 @@ class User(AbstractUser, BaseModel):
         verbose_name = "회원가입 신청자"
         verbose_name_plural = "회원가입 신청 목록"
 
+    @property
+    def get_password(self):
+        return self.password
+
 
 class Employee(models.Model):
     class AuthorizationGradeChoices(models.TextChoices):

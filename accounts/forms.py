@@ -1,5 +1,6 @@
 import re
 
+from django.contrib.auth.hashers import check_password
 from django.core.exceptions import ValidationError
 from django import forms
 
@@ -79,4 +80,36 @@ class SignUpForm(forms.Form):
                         "password_confirm": ["비밀번호가 일치하지 않습니다."],
                     }
                 )
+        return cleaned_data
+
+
+class LoginForm(forms.Form):
+    email = forms.EmailField(
+        label="이메일", widget=forms.EmailInput(attrs={"placeholder": "이메일"})
+    )
+    password = forms.CharField(
+        label="비밀번호",
+        widget=forms.PasswordInput(
+            attrs={"placeholder": "비밀번호", "autocomplete": "new-password"}
+        ),
+    )
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email")
+
+        if not User.objects.filter(email=email).exists():
+            raise ValidationError("가입되지 않은 이메일입니다.")
+
+        return email
+
+    def clean(self):
+        cleaned_data = super(LoginForm, self).clean()
+
+        email = cleaned_data.get("email")
+        password = cleaned_data.get("password")
+
+        user = User.objects.get(email=email)
+        if not check_password(password, user.get_password):
+            raise ValidationError({"password": "비밀번호가 잘못되었습니다."})
+
         return cleaned_data
