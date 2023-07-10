@@ -1,8 +1,4 @@
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import (
-    RegexValidator,
-    MinLengthValidator,
-)
 from django.conf import settings
 from django.db import models
 
@@ -25,7 +21,6 @@ class User(AbstractUser, BaseModel):
     phone = models.CharField(
         verbose_name="연락처",
         max_length=11,
-        validators=[RegexValidator(r"^010-?[1-9]\d{3}-?\d{4}$")],
     )
     state = models.CharField(
         verbose_name="회원가입 상태", max_length=2, choices=StateChoices.choices
