@@ -25,7 +25,7 @@ class User(AbstractUser, BaseModel):
     state = models.CharField(
         verbose_name="회원가입 상태", max_length=2, choices=StateChoices.choices
     )
-    rejected_at = models.DateTimeField(verbose_name="회원가입 신청 거절일시", null=True)
+    rejected_at = models.DateTimeField(verbose_name="회원가입 신청 거절일시", blank=True)
     reason_for_refusal = models.CharField(
         verbose_name="회원가입 신청 거절 사유", blank=True, max_length=50
     )
@@ -34,8 +34,8 @@ class User(AbstractUser, BaseModel):
         return f"{self.username} {self.state}"
 
     class Meta:
-        verbose_name = "회원가입 신청자"
-        verbose_name_plural = "회원가입 신청 목록"
+        verbose_name = "회원가입 내역"
+        verbose_name_plural = "회원가입 내역 목록"
 
     @property
     def get_password(self):
