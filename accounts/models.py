@@ -13,9 +13,9 @@ class BaseModel(models.Model):
 
 class User(AbstractUser, BaseModel):
     class StateChoices(models.TextChoices):
-        AWAIT = "AW", "회원가입 승인 대기"
-        APPROVAL = "AP", "회원가입 완료"
-        REJECTED = "RJ", "회원가입 거절"
+        AWAIT = "AW", "대기"
+        APPROVAL = "AP", "승인"
+        REJECTED = "RJ", "거절"
 
     email = models.EmailField(verbose_name="이메일", unique=True)
     phone = models.CharField(
@@ -23,9 +23,14 @@ class User(AbstractUser, BaseModel):
         max_length=11,
     )
     state = models.CharField(
-        verbose_name="회원가입 상태", max_length=2, choices=StateChoices.choices
+        verbose_name="회원가입 상태",
+        max_length=2,
+        choices=StateChoices.choices,
+        default=StateChoices.AWAIT,
     )
-    rejected_at = models.DateTimeField(verbose_name="회원가입 신청 거절일시", blank=True)
+    rejected_at = models.DateTimeField(
+        verbose_name="회원가입 신청 거절일시", blank=True, null=True
+    )
     reason_for_refusal = models.CharField(
         verbose_name="회원가입 신청 거절 사유", blank=True, max_length=50
     )
