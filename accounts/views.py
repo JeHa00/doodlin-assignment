@@ -65,7 +65,7 @@ class LoginView(FormView):
         return super().form_invalid(form)
 
     def redirect_url(self):
-        if  self.request.user.state == "AP":
+        if self.request.user.state == "AP":
             employee = Employee.objects.get(user=self.request.user)
             if employee.authorization_grade == "MS":
                 return reverse_lazy("signup_list")
@@ -96,3 +96,19 @@ class EmployeeListView(ListView):
     context_object_name = "employee_list"
     ordering = ["-id"]
     paginate_by = 7
+
+    def get_queryset(self):
+        employee = Employee.objects.get(user_id=self.request.user.id)
+        grade = employee.authorization_grade
+        if grade == "MS":
+            self.queryset = Employee.objects.select_related("user")
+        elif grade == "MA":
+            self.queryset = Employee.objects.exclude(
+                authorization_grade="MS"
+            ).select_related("user")
+        else:
+            self.queryset = Employee.objects.filter(
+                authorization_grade="ST"
+            ).select_related("user")
+
+        return super().get_queryset()
