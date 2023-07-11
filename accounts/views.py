@@ -1,12 +1,17 @@
+from typing import Any, Dict
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
-from django.views.generic import FormView, ListView
+from django.views.generic import FormView, ListView, DetailView
+from django.views.generic.base import ContextMixin
 from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.db.models import Q
 
-from accounts.utils import grade_filter_on_signup_list
+from accounts.utils import (
+    authorization_filter_on_signup_list,
+    authorization_filter_on_employee_list,
+)
 from accounts.forms import SignUpForm, LoginForm
 from accounts.models import User, Employee
 
@@ -66,13 +71,8 @@ class LoginView(FormView):
 
     def redirect_url(self):
         if self.request.user.state == "AP":
-            employee = Employee.objects.get(user=self.request.user)
-            if employee.authorization_grade == "MS":
-                return reverse_lazy("signup_list")
-            elif (
-                employee.authorization_grade == "MA"
-                and employee.signup_approval_authorization
-            ):
+            employee = Employee.objects.get(user_id=self.request.user.id)
+            if employee.signup_approval_authorization:
                 return reverse_lazy("signup_list")
             else:
                 return reverse_lazy("employee_list")
@@ -80,20 +80,30 @@ class LoginView(FormView):
             return reverse_lazy("guide")
 
 
-@method_decorator(login_required(login_url=reverse_lazy("login")), name="dispatch")
-@method_decorator(grade_filter_on_signup_list, name="dispatch")
+@method_decorator(login_required(login_url=reverse_lazy("login")), name="get")
+@method_decorator(authorization_filter_on_signup_list, name="dispatch")
 class SignupListView(ListView):
     queryset = User.objects.exclude(Q(state="AP") | Q(is_superuser=1))
     template_name = "accounts/signup_list.html"
-    context_object_name = "signup_list"
     ordering = ["-id"]
     paginate_by = 7
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        employee = Employee.objects.get(user_id=self.request.user.id)
+        
+        if employee.list_read_authorization:
+            context["read_authorization"] = True
+        
+        context["approval_authorization"] = True
+        
+        return context
+
 
 @method_decorator(login_required(login_url=reverse_lazy("login")), name="get")
+@method_decorator(authorization_filter_on_employee_list, name="dispatch")
 class EmployeeListView(ListView):
     template_name = "employee/list.html"
-    context_object_name = "employee_list"
     ordering = ["-id"]
     paginate_by = 7
 
@@ -112,3 +122,14 @@ class EmployeeListView(ListView):
             ).select_related("user")
 
         return super().get_queryset()
+
+    def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        employee = Employee.objects.get(user_id=self.request.user.id)
+        
+        if employee.signup_approval_authorization:
+            context["approval_authorization"] = True
+        
+        context["read_authorization"] = True
+        
+        return context
