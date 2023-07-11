@@ -14,6 +14,7 @@ from accounts.utils import (
 )
 from accounts.forms import SignUpForm, LoginForm
 from accounts.models import User, Employee
+from config.settings.base import COUNTS_PER_PAGE
 
 
 @login_required(login_url=reverse_lazy("login"))
@@ -86,17 +87,17 @@ class SignupListView(ListView):
     queryset = User.objects.exclude(Q(state="AP") | Q(is_superuser=1))
     template_name = "accounts/signup_list.html"
     ordering = ["-id"]
-    paginate_by = 7
+    paginate_by = COUNTS_PER_PAGE
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         employee = Employee.objects.get(user_id=self.request.user.id)
-        
+
         if employee.list_read_authorization:
             context["read_authorization"] = True
-        
+
         context["approval_authorization"] = True
-        
+
         return context
 
 
@@ -105,11 +106,12 @@ class SignupListView(ListView):
 class EmployeeListView(ListView):
     template_name = "employee/list.html"
     ordering = ["-id"]
-    paginate_by = 7
+    paginate_by = COUNTS_PER_PAGE
 
     def get_queryset(self):
         employee = Employee.objects.get(user_id=self.request.user.id)
         grade = employee.authorization_grade
+
         if grade == "MS":
             self.queryset = Employee.objects.select_related("user")
         elif grade == "MA":
@@ -126,10 +128,10 @@ class EmployeeListView(ListView):
     def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
         context = super().get_context_data(**kwargs)
         employee = Employee.objects.get(user_id=self.request.user.id)
-        
+
         if employee.signup_approval_authorization:
             context["approval_authorization"] = True
-        
+
         context["read_authorization"] = True
-        
+
         return context
