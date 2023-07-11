@@ -50,24 +50,23 @@ class SignUpView(FormView):
 class LoginView(FormView):
     template_name = "accounts/login.html"
     form_class = LoginForm
-    user_logged_in = None
 
     def get_success_url(self) -> str:
         return self.redirect_url()
 
     def form_valid(self, form):
         email = form.data.get("email")
-        self.user_logged_in = User.objects.get(email=email)
-        self.user_logged_in.update_last_login()
-        login(self.request, self.user_logged_in)
+        user = User.objects.get(email=email)
+        user.update_last_login()
+        login(self.request, user)
         return super().form_valid(form)
 
     def form_invalid(self, form):
         return super().form_invalid(form)
 
     def redirect_url(self):
-        if self.user_logged_in.state == "AP":
-            employee = Employee.objects.get(user=self.user_logged_in)
+        if  self.request.user.state == "AP":
+            employee = Employee.objects.get(user=self.request.user)
             if employee.authorization_grade == "MS":
                 return reverse_lazy("signup_list")
             elif (
@@ -93,7 +92,6 @@ class SignupListView(ListView):
 
 @method_decorator(login_required(login_url=reverse_lazy("login")), name="get")
 class EmployeeListView(ListView):
-    queryset = User.objects.exclude(Q(state="AP") | Q(is_superuser=1))
     template_name = "employee/list.html"
     context_object_name = "employee_list"
     ordering = ["-id"]
