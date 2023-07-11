@@ -68,7 +68,7 @@ class Employee(models.Model):
     is_resigned = models.BooleanField(verbose_name="퇴사 유무", default=False)
 
     def __str__(self):
-        return f"{self.user} ({self.authorization_grade})"
+        return f"{self.authorization_grade} ({self.signup_approval_authorization})"
 
     class Meta:
         verbose_name = "임직원"
