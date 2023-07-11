@@ -1,14 +1,22 @@
-from django.contrib.auth import login, logout, authenticate
-from django.views.generic import FormView
-from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login, logout
+from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
+from django.db.models import Q
 
 from accounts.forms import SignUpForm, LoginForm
 from accounts.models import User
 
 
+@login_required(login_url=reverse_lazy("login"))
 def guide_view(request):
     return render(request, "accounts/signup_guide.html")
+
+
+@login_required(login_url=reverse_lazy("login"))
+def logout_view(request):
+    logout(request)
+    return redirect("login")
 
 
 class SignUpView(FormView):
