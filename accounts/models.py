@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 from django.conf import settings
 from django.db import models
 
@@ -42,9 +43,13 @@ class User(AbstractUser, BaseModel):
         verbose_name = "회원가입 내역"
         verbose_name_plural = "회원가입 내역 목록"
 
-    @property
     def get_password(self):
         return self.password
+
+    def update_last_login(self):
+        self.last_login = timezone.now()
+        self.save(update_fields=["last_login"])
+        return True
 
 
 class Employee(models.Model):

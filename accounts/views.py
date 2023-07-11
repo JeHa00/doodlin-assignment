@@ -17,13 +17,11 @@ class SignUpView(FormView):
     success_url = reverse_lazy("login")
 
     def form_valid(self, form):
-        # User
         email = form.data.get("email")
         password = form.data.get("password")
         username = form.data.get("username")
         phone = form.data.get("phone")
 
-        # 유저 생성
         user = User.objects.create_user(
             username=username,
             email=email,
@@ -44,15 +42,11 @@ class LoginView(FormView):
     success_url = reverse_lazy("guide")
 
     def form_valid(self, form):
-        print("LoginView - form_valid")
         email = form.data.get("email")
-        password = form.data.get("password")
-
-        user = authenticate(self.request, username=email, password=password)
-
+        user = User.objects.get(email=email)
+        user.update_last_login()
         login(self.request, user)
         return super().form_valid(form)
 
     def form_invalid(self, form):
-        print("LoginView - form_invalid")
         return super().form_invalid(form)
