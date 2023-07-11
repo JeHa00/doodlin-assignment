@@ -58,7 +58,9 @@ class Employee(models.Model):
         MANAGER = "MA", "관리자"
         STAFF = "ST", "일반"
 
-    user = models.ManyToManyField(settings.AUTH_USER_MODEL, verbose_name="임직원")
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, verbose_name="임직원", on_delete=models.CASCADE
+    )
     authorization_grade = models.CharField(
         verbose_name="등급", max_length=2, choices=AuthorizationGradeChoices.choices
     )
@@ -76,7 +78,9 @@ class Employee(models.Model):
 
 
 class Resignation(models.Model):
-    resigned_user = models.ManyToManyField(Employee, verbose_name="퇴사자")
+    resigned_user = models.OneToOneField(
+        Employee, verbose_name="퇴사자", on_delete=models.CASCADE
+    )
     reason_for_resignation = models.CharField(verbose_name="퇴사 사유", max_length=50)
     resigned_at = models.DateTimeField(verbose_name="퇴사일", auto_now_add=True)
 
