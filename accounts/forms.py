@@ -109,7 +109,7 @@ class LoginForm(forms.Form):
         password = cleaned_data.get("password")
 
         user = User.objects.get(email=email)
-        if not check_password(password, user.get_password):
+        if not check_password(password, user.get_password()):
             raise ValidationError({"password": "비밀번호가 잘못되었습니다."})
 
         return cleaned_data
