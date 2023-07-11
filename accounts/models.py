@@ -59,15 +59,38 @@ class Employee(models.Model):
         STAFF = "ST", "일반"
 
     user = models.OneToOneField(
-        settings.AUTH_USER_MODEL, verbose_name="임직원", on_delete=models.CASCADE
+        settings.AUTH_USER_MODEL,
+        verbose_name="임직원",
+        on_delete=models.CASCADE,
     )
     authorization_grade = models.CharField(
-        verbose_name="등급", max_length=2, choices=AuthorizationGradeChoices.choices
+        verbose_name="등급",
+        max_length=2,
+        choices=AuthorizationGradeChoices.choices,
     )
     signup_approval_authorization = models.BooleanField(
-        verbose_name="회원가입 승인 권한 유무", default=False
+        verbose_name="가입 승인 권한", default=False
     )
-    is_resigned = models.BooleanField(verbose_name="퇴사 유무", default=False)
+
+    list_read_authorization = models.BooleanField(
+        verbose_name="조회 권한",
+        default=True,
+    )
+
+    update_authorization = models.BooleanField(
+        verbose_name="수정 권한",
+        default=False,
+    )
+
+    resign_authorization = models.BooleanField(
+        verbose_name="탈퇴 권한",
+        default=False,
+    )
+
+    is_resigned = models.BooleanField(
+        verbose_name="퇴사 유무",
+        default=False,
+    )
 
     def __str__(self):
         return f"{self.authorization_grade} ({self.signup_approval_authorization})"
