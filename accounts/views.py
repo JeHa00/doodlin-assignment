@@ -1,7 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.hashers import make_password
 from django.utils.decorators import method_decorator
 from django.views.generic import FormView, ListView
+from django.views.generic.base import View, TemplateResponseMixin
 from django.contrib.auth import login, logout
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -49,14 +51,15 @@ class SignUpView(FormView):
     def form_valid(self, form):
         email = form.data.get("email")
         password = form.data.get("password")
-        username = form.data.get("username")
+        name = form.data.get("name")
         phone = form.data.get("phone")
 
         user = User.objects.create_user(
-            username=username,
+            username=email,
             email=email,
             password=password,
             phone=phone,
+            name=name,
         )
         user.save()
 
@@ -141,51 +144,78 @@ class EmployeeListView(ListView):
 
 @login_required(login_url=reverse_lazy("login"))
 def signup_user_detail_view(request, user_id):
+    def get_context_data(users_form, employee_form):
+        context = {
+            "user_form": users_form,
+            "employee_form": employee_form,
+            "signup_list": True,
+        }
+        return context
+
     user = get_object_or_404(User, pk=user_id)
+
     if request.method == "POST":
-        if "refusal-btn" in request.POST:  # 거절 버튼 클릭 시
-            user_form = UserForm(request.POST, instance=user)
-            if user_form.is_valid():
+        user_form = UserForm(request.POST, instance=user)
+
+        if user_form.is_valid():
+            state = user_form.cleaned_data.get("state")
+            user.state = state
+
+            if "refusal-btn" in request.POST:
                 reason_for_refusal = user_form.cleaned_data.get("reason_for_refusal")
                 rejected_at = timezone.now()
                 user.reason_for_refusal = reason_for_refusal
                 user.rejected_at = rejected_at
-                user.save()
 
-        else:  # 승인 버튼 클릭 시
-            user_form = UserForm(request.POST, instance=user)
-            if user_form.is_valid():
-                state = user_form.cleaned_data.get("state")
-                user.state = state
-                user.save()
+                fields_to_be_updated = ["state", "reason_for_refusal", "rejected_at"]
+                user.save(update_fields=fields_to_be_updated)
 
-            employee_form = EmployeeForm(request.POST)
-            if employee_form.is_valid():
-                cleaned_data = employee_form.cleaned_data
-                grade = employee_form.data.get("grade")
-                authorizations = {
-                    "authorization_grade": grade,
-                    "signup_approval_authorization": cleaned_data.get(
-                        "signup_approval_authorization"
-                    ),
-                    "list_read_authorization": cleaned_data.get(
-                        "list_read_authorization"
-                    ),
-                    "update_authorization": cleaned_data.get("update_authorization"),
-                    "resign_authorization": cleaned_data.get("resign_authorization"),
-                }
+                employee_form = EmployeeForm(request.POST)
+                context = get_context_data(user_form, employee_form)
 
-            employee = Employee.objects.create(user_id=user.id, **authorizations)
-            employee.save()
+                return render(request, "detail.html", context)
+            else:
+                fields_to_be_updated = ["state"]
+                user.save(update_fields=fields_to_be_updated)
 
-            return redirect("signup_list")
+                employee_form = EmployeeForm(request.POST)
+
+                if employee_form.is_valid():
+                    cleaned_data = employee_form.cleaned_data
+                    grade = employee_form.data.get("grade")
+
+                    authorizations = {
+                        "authorization_grade": grade,
+                        "signup_approval_authorization": cleaned_data.get(
+                            "signup_approval_authorization"
+                        ),
+                        "list_read_authorization": cleaned_data.get(
+                            "list_read_authorization"
+                        ),
+                        "update_authorization": cleaned_data.get(
+                            "update_authorization"
+                        ),
+                        "resign_authorization": cleaned_data.get(
+                            "resign_authorization"
+                        ),
+                    }
+
+                    employee = Employee.objects.create(
+                        user_id=user.id, **authorizations
+                    )
+                    employee.save()
+
+                    context = get_context_data(user_form, employee_form)
+
+                    return render(request, "detail.html", context)
+
     else:
         user_form = UserForm(instance=user)
         employee_form = EmployeeForm()
+        context = get_context_data(user_form, employee_form)
 
-    context = {
-        "user_form": user_form,
-        "employee_form": employee_form,
-        "signup_list": True,
-    }
-    return render(request, "detail.html", context)
+        return render(request, "detail.html", context)
+
+
+def employee_detail_view(request, employee_id):
+    pass

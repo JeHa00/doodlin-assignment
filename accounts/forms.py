@@ -12,7 +12,7 @@ class SignUpForm(forms.Form):
     email = forms.EmailField(
         label="이메일", widget=forms.EmailInput(attrs={"placeholder": "이메일"})
     )
-    username = forms.CharField(
+    name = forms.CharField(
         label="이름", widget=forms.TextInput(attrs={"placeholder": "이름"})
     )
     phone = forms.CharField(
@@ -106,26 +106,40 @@ class LoginForm(forms.Form):
                 raise ValidationError({"password": "비밀번호가 잘못되었습니다."})
         except ObjectDoesNotExist:
             raise ValidationError({"email": "가입되지 않은 이메일입니다."})
-        
+
         return cleaned_data
 
 
 class UserForm(forms.ModelForm):
     email = forms.CharField(
-        label="이메일", widget=forms.TextInput(attrs={"disabled": "disabled"})
+        label="이메일",
+        required=False,
+        widget=forms.TextInput(attrs={"disabled": "disabled"}),
     )
     phone = forms.CharField(label="전화번호")
+    reason_for_refusal = forms.CharField(
+        label="거절 사유",
+        required=False,
+        widget=forms.Textarea(attrs={"placeholder": "거절 시 거절 사유를 기입하세요.", "rows": 2}),
+    )
 
     class Meta:
         model = User
         fields = [
             "email",
-            "username",
+            "name",
             "phone",
             "state",
             "rejected_at",
             "reason_for_refusal",
         ]
+
+    def clean_reason_for_refusal(self):
+        if "refusal-btn" in self.data:
+            reason_for_refusal = self.cleaned_data.get("reason_for_refusal")
+            if not reason_for_refusal:
+                raise ValidationError("거절 사유를 입력해야 거절할 수 있습니다.")
+            return reason_for_refusal
 
 
 class EmployeeForm(forms.ModelForm):
