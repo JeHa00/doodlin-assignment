@@ -4,7 +4,7 @@ from django.contrib.auth.hashers import check_password
 from django.core.exceptions import ValidationError
 from django import forms
 
-from accounts.models import User
+from accounts.models import User, Employee
 
 
 class SignUpForm(forms.Form):
@@ -99,7 +99,6 @@ class LoginForm(forms.Form):
 
         if not User.objects.filter(email=email).exists():
             raise ValidationError("가입되지 않은 이메일입니다.")
-
         return email
 
     def clean(self):
@@ -113,3 +112,36 @@ class LoginForm(forms.Form):
             raise ValidationError({"password": "비밀번호가 잘못되었습니다."})
 
         return cleaned_data
+
+
+class UserForm(forms.ModelForm):
+    email = forms.CharField(
+        label="이메일", widget=forms.TextInput(attrs={"disabled": "disabled"})
+    )
+    phone = forms.CharField(label="전화번호")
+
+    class Meta:
+        model = User
+        fields = [
+            "email",
+            "username",
+            "phone",
+            "state",
+            "rejected_at",
+            "reason_for_refusal",
+        ]
+
+
+class EmployeeForm(forms.ModelForm):
+    authorization_choices = [("MA", "관리자"), ("ST", "일반")]
+    grade = forms.ChoiceField(label="등급", choices=authorization_choices)
+
+    class Meta:
+        model = Employee
+        fields = [
+            "grade",
+            "signup_approval_authorization",
+            "list_read_authorization",
+            "update_authorization",
+            "resign_authorization",
+        ]

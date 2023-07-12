@@ -76,8 +76,10 @@ class LoginView(FormView):
     def form_valid(self, form):
         email = form.data.get("email")
         user = User.objects.get(email=email)
+
         user.update_last_login()
         login(self.request, user)
+
         return super().form_valid(form)
 
     def form_invalid(self, form):
@@ -86,6 +88,7 @@ class LoginView(FormView):
     def redirect_url(self):
         if self.request.user.state == "AP":
             employee = Employee.objects.get(user_id=self.request.user.id)
+
             if employee.signup_approval_authorization:
                 return reverse_lazy("signup_list")
             else:
@@ -95,10 +98,10 @@ class LoginView(FormView):
 
 
 @method_decorator(login_required(login_url=reverse_lazy("login")), name="get")
-@method_decorator(authorization_filter_on_signup_list, name="dispatch")
+@method_decorator(authorization_filter_on_signup_list, name="get")
 class SignupListView(ListView):
     queryset = User.objects.exclude(Q(state="AP") | Q(is_superuser=1))
-    template_name = "accounts/signup_list.html"
+    template_name = "list.html"
     ordering = ["-id"]
     paginate_by = COUNTS_PER_PAGE
 
@@ -110,6 +113,7 @@ class SignupListView(ListView):
             context["read_authorization"] = True
 
         context["approval_authorization"] = True
+        context["signup_list"] = True
 
         return context
 
@@ -118,7 +122,7 @@ class SignupListView(ListView):
 @method_decorator(authorization_filter_on_employee_list, name="get")
 class EmployeeListView(ListView):
     queryset = Employee.objects.select_related("user")
-    template_name = "employee/list.html"
+    template_name = "list.html"
     ordering = ["-id"]
     paginate_by = COUNTS_PER_PAGE
 
@@ -130,5 +134,58 @@ class EmployeeListView(ListView):
             context["approval_authorization"] = True
 
         context["read_authorization"] = True
+        context["signup_list"] = False
 
         return context
+
+
+@login_required(login_url=reverse_lazy("login"))
+def signup_user_detail_view(request, user_id):
+    user = get_object_or_404(User, pk=user_id)
+    if request.method == "POST":
+        if "refusal-btn" in request.POST:  # 거절 버튼 클릭 시
+            user_form = UserForm(request.POST, instance=user)
+            if user_form.is_valid():
+                reason_for_refusal = user_form.cleaned_data.get("reason_for_refusal")
+                rejected_at = timezone.now()
+                user.reason_for_refusal = reason_for_refusal
+                user.rejected_at = rejected_at
+                user.save()
+
+        else:  # 승인 버튼 클릭 시
+            user_form = UserForm(request.POST, instance=user)
+            if user_form.is_valid():
+                state = user_form.cleaned_data.get("state")
+                user.state = state
+                user.save()
+
+            employee_form = EmployeeForm(request.POST)
+            if employee_form.is_valid():
+                cleaned_data = employee_form.cleaned_data
+                grade = employee_form.data.get("grade")
+                authorizations = {
+                    "authorization_grade": grade,
+                    "signup_approval_authorization": cleaned_data.get(
+                        "signup_approval_authorization"
+                    ),
+                    "list_read_authorization": cleaned_data.get(
+                        "list_read_authorization"
+                    ),
+                    "update_authorization": cleaned_data.get("update_authorization"),
+                    "resign_authorization": cleaned_data.get("resign_authorization"),
+                }
+
+            employee = Employee.objects.create(user_id=user.id, **authorizations)
+            employee.save()
+
+            return redirect(request, "signup_detail", user_id=user_id)
+    else:
+        user_form = UserForm(instance=user)
+        employee_form = EmployeeForm()
+
+    context = {
+        "user_form": user_form,
+        "employee_form": employee_form,
+        "signup_list": True,
+    }
+    return render(request, "detail.html", context)
