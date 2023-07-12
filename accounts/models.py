@@ -19,6 +19,7 @@ class User(AbstractUser, BaseModel):
         REJECTED = "RJ", "거절"
 
     email = models.EmailField(verbose_name="이메일", unique=True)
+    name = models.CharField(max_length=50)
     phone = models.CharField(
         verbose_name="연락처",
         max_length=11,
@@ -33,11 +34,11 @@ class User(AbstractUser, BaseModel):
         verbose_name="회원가입 신청 거절일시", blank=True, null=True
     )
     reason_for_refusal = models.CharField(
-        verbose_name="회원가입 신청 거절 사유", blank=True, max_length=50
+        verbose_name="회원가입 신청 거절 사유", blank=True, null=True, max_length=50
     )
 
     def __str__(self):
-        return f"{self.username} {self.state}"
+        return f"{self.name} {self.state}"
 
     class Meta:
         verbose_name = "회원가입 내역"
