@@ -178,7 +178,7 @@ def signup_user_detail_view(request, user_id):
             employee = Employee.objects.create(user_id=user.id, **authorizations)
             employee.save()
 
-            return redirect(request, "signup_detail", user_id=user_id)
+            return redirect("signup_list")
     else:
         user_form = UserForm(instance=user)
         employee_form = EmployeeForm()
