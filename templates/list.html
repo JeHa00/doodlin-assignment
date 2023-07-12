@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block head_css %}
+{% endblock head_css%}
+
+{% block content %}
+<div class="signup-wait-list">
+    {% if signup_list %}
+    <h3>가입 대기</h3>
+    {% else %}
+    <h3>유저</h3>
+    {% endif %}
+
+    <table class="signup-wait-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>이메일</th>
+                {% if signup_list %}
+                <th>상태</th>
+                <th>이름</th>
+                <th>가입일시</th>
+                <th>거절일시</th>
+                {% else %}
+                <th>등급</th>
+                <th>가입일시</th>
+                <th>최근 로그인일시</th>
+                {% endif %}
+
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if signup_list %}
+            {% for account in object_list %}
+            <tr>
+                <td class="id">{{account.id}}</td>
+                <td class="email">{{account.email}}</td>
+                <td class="state">{{account.get_state_display}}</td>
+                <td class="username">{{account.username}}</td>
+                <td class="created_at">{{account.created_at|date:"Y-m-d H:i"}}</td>
+                <td class="rejected_at">
+                    {% if account.rejected_at is none %}
+                    -
+                    {% else %}
+                    {{ account.rejected_at|date:"Y-m-d H:i"}}
+                    {% endif %}
+                </td>
+                <td class="detail">
+                    <button type="button" onclick="location.href='{% url 'signup_detail' account.id %}'">상세</button>
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            {% for employee in object_list %}
+            <tr>
+                <td class="id">{{employee.user.id}}</td>
+                <td class="email">{{employee.user.email}}</td>
+                <td class="grade">{{employee.get_authorization_grade_display}}</td>
+                <td class="created_at">{{employee.user.created_at|date:"Y-m-d H:i"}}</td>
+                <td class="last_login">{{employee.user.last_login|date:"Y-m-d H:i"}}</td>
+                <td class="detail">
+                    <button type="button" onclick="location.href='{% url 'employee_detail' employee.id %}'">상세</button>
+                </td>
+            </tr>
+            {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+    {% include 'pagination.html' %}
+
+</div>
+{% endblock content %}
