@@ -42,7 +42,7 @@ def logout_view(request):
 
 
 class SignUpView(FormView):
-    template_name = "accounts/signup.html"
+    template_name = "user/signup.html"
     form_class = SignUpForm
     success_url = reverse_lazy("login")
 
@@ -67,7 +67,7 @@ class SignUpView(FormView):
 
 
 class LoginView(FormView):
-    template_name = "accounts/login.html"
+    template_name = "user/login.html"
     form_class = LoginForm
 
     def get_success_url(self) -> str:
