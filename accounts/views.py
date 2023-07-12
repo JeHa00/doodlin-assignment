@@ -102,30 +102,14 @@ class SignupListView(ListView):
 
 
 @method_decorator(login_required(login_url=reverse_lazy("login")), name="get")
-@method_decorator(authorization_filter_on_employee_list, name="dispatch")
+@method_decorator(authorization_filter_on_employee_list, name="get")
 class EmployeeListView(ListView):
+    queryset = Employee.objects.select_related("user")
     template_name = "employee/list.html"
     ordering = ["-id"]
     paginate_by = COUNTS_PER_PAGE
 
-    def get_queryset(self):
-        employee = Employee.objects.get(user_id=self.request.user.id)
-        grade = employee.authorization_grade
-
-        if grade == "MS":
-            self.queryset = Employee.objects.select_related("user")
-        elif grade == "MA":
-            self.queryset = Employee.objects.exclude(
-                authorization_grade="MS"
-            ).select_related("user")
-        else:
-            self.queryset = Employee.objects.filter(
-                authorization_grade="ST"
-            ).select_related("user")
-
-        return super().get_queryset()
-
-    def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
+    def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         employee = Employee.objects.get(user_id=self.request.user.id)
 
