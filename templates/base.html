@@ -1,0 +1,47 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'css/reset.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    {% block head_css %}
+    {% endblock head_css%}
+
+    <title>Assignment</title>
+</head>
+
+<body>
+    {% block header %}
+
+    {% endblock header %}
+    <main class="app">
+        <section class="sidebar">
+            {% if user.is_authenticated %}
+            <div class="sidebar-menu">
+                {% if approval_authorization %}
+                <div onclick="location.href='{% url 'signup_list' %}'">가입 대기 목록</div>
+                {% endif %}
+                {% if read_authorization %}
+                <div onclick="location.href='{% url 'employee_list' %}'">회원 목록</div>
+                {% endif %}
+            </div>
+
+            <div class="button-submit-wrap">
+                <button class="button-submit" type="submit" onclick="location.href='{% url 'logout' %}'">로그아웃</button>
+            </div>
+            {% endif %}
+        </section>
+        <section class="main">
+
+            {% block content %}
+
+            {% endblock content %}
+        </section>
+    </main>
+</body>
+
+</html>
