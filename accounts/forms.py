@@ -1,10 +1,11 @@
 import re
 
 from django.contrib.auth.hashers import check_password
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ValidationError
 from django import forms
 
-from accounts.models import User, Employee
+from accounts.models import User, Employee, Resignation
 
 
 class SignUpForm(forms.Form):
@@ -94,23 +95,18 @@ class LoginForm(forms.Form):
         ),
     )
 
-    def clean_email(self):
-        email = self.cleaned_data.get("email")
-
-        if not User.objects.filter(email=email).exists():
-            raise ValidationError("가입되지 않은 이메일입니다.")
-        return email
-
     def clean(self):
         cleaned_data = super(LoginForm, self).clean()
-
         email = cleaned_data.get("email")
         password = cleaned_data.get("password")
 
-        user = User.objects.get(email=email)
-        if not check_password(password, user.get_password()):
-            raise ValidationError({"password": "비밀번호가 잘못되었습니다."})
-
+        try:
+            user = User.objects.get(email=email)
+            if not check_password(password, user.get_password()):
+                raise ValidationError({"password": "비밀번호가 잘못되었습니다."})
+        except ObjectDoesNotExist:
+            raise ValidationError({"email": "가입되지 않은 이메일입니다."})
+        
         return cleaned_data
 
 
