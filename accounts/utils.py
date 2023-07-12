@@ -22,6 +22,8 @@ def authorization_filter_on_employee_list(function):
             employee = Employee.objects.get(user_id=request.user.id)
             if employee.list_read_authorization:
                 return function(request)
+            else:
+                return redirect("guide")
         else:
             return redirect("guide")
 

@@ -1,25 +1,38 @@
-from typing import Any, Dict
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
-from django.views.generic import FormView, ListView, DetailView
-from django.views.generic.base import ContextMixin
+from django.views.generic import FormView, ListView
 from django.contrib.auth import login, logout
-from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.db.models import Q
 
-from accounts.utils import (
-    authorization_filter_on_signup_list,
-    authorization_filter_on_employee_list,
-)
-from accounts.forms import SignUpForm, LoginForm
-from accounts.models import User, Employee
 from config.settings.base import COUNTS_PER_PAGE
+from accounts.utils import (
+    authorization_filter_on_employee_list,
+    authorization_filter_on_signup_list,
+)
+from accounts.forms import (
+    EmployeeForm,
+    SignUpForm,
+    LoginForm,
+    UserForm,
+)
+from accounts.models import User, Employee
 
 
 @login_required(login_url=reverse_lazy("login"))
 def guide_view(request):
-    return render(request, "accounts/signup_guide.html")
+    context = dict()
+    if request.user.state == "AP":
+        employee = Employee.objects.get(user_id=request.user.id)
+
+        if not employee.list_read_authorization:
+            context["AP"] = True
+    else:
+        context["AP"] = False
+
+    return render(request, "guide.html", context)
 
 
 @login_required(login_url=reverse_lazy("login"))
