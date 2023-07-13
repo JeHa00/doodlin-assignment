@@ -144,9 +144,9 @@ class EmployeeListView(ListView):
 
 @login_required(login_url=reverse_lazy("login"))
 def signup_user_detail_view(request, user_id):
-    def get_context_data(users_form, employee_form):
+    def get_context_data(user_form, employee_form):
         context = {
-            "user_form": users_form,
+            "user_form": user_form,
             "employee_form": employee_form,
             "signup_list": True,
         }
