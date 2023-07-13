@@ -106,7 +106,7 @@ class Resignation(models.Model):
         Employee, verbose_name="퇴사자", on_delete=models.CASCADE
     )
     reason_for_resignation = models.CharField(verbose_name="퇴사 사유", max_length=50)
-    resigned_at = models.DateTimeField(verbose_name="퇴사일", auto_now_add=True)
+    resigned_at = models.DateTimeField(verbose_name="퇴사일", blank=True, null=True)
 
     def __str__(self):
         return f"{self.resigned_user} ({self.resigned_at})"
