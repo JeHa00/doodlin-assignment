@@ -122,6 +122,7 @@ class UserForm(forms.ModelForm):
         required=False,
         widget=forms.Textarea(attrs={"placeholder": "거절 시 거절 사유를 기입하세요.", "rows": 2}),
     )
+    state = forms.CharField(label="상태", required=False)
 
     class Meta:
         model = User
@@ -143,8 +144,10 @@ class UserForm(forms.ModelForm):
 
 
 class EmployeeForm(forms.ModelForm):
-    authorization_choices = [("MA", "관리자"), ("ST", "일반")]
-    grade = forms.ChoiceField(label="등급", choices=authorization_choices)
+    authorization_choices = [("", ""), ("MA", "관리자"), ("ST", "일반")]
+    grade = forms.ChoiceField(
+        label="등급", choices=authorization_choices, initial={"authorization_choices": ""}
+    )
 
     class Meta:
         model = Employee
@@ -155,3 +158,22 @@ class EmployeeForm(forms.ModelForm):
             "update_authorization",
             "resign_authorization",
         ]
+
+
+class ResignationForm(forms.ModelForm):
+    resigned_at = forms.DateTimeField(
+        label="탈퇴일시",
+        required=False,
+        widget=forms.TextInput(attrs={"disabled": "disabled"}),
+    )
+    reason_for_resignation = forms.CharField(
+        label="탈퇴 사유",
+        required=False,
+        widget=forms.Textarea(
+            attrs={"placeholder": "탈퇴 시킬 시 탈퇴 사유를 기입하세요.", "rows": 2}
+        ),
+    )
+
+    class Meta:
+        model = Resignation
+        fields = ["reason_for_resignation", "resigned_at"]
