@@ -1,11 +1,6 @@
 {% extends "index.html" %}
 {% load static %}
 
-
-{% block head_css %}
-<link rel="stylesheet" href="{% static 'css/login.css' %}">
-{% endblock head_css%}
-
 {% block content %}
 <form action="{% url 'login' %}" method="POST" enctype="multipart/form-data">
     {% csrf_token %}
