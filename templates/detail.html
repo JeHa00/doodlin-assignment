@@ -1,0 +1,106 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'css/detail.css' %}">
+    <title>Document</title>
+</head>
+
+<body>
+    <form action="" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>이메일</th>
+                    <th>이름</th>
+                    <th>전화번호</th>
+                    {% if signup_list %}
+                    <th>상태</th>
+                    {% else %}
+                    <th>탈퇴일시</th>
+                    {% endif %}
+                    <th>등급</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="email">{{user_form.email.value}}</td>
+                    <td class="name">{{user_form.name}}</td>
+                    <td class="phone">{{user_form.phone}}</td>
+                    {% if signup_list %}
+                    <td class="state">{{user_form.state}}</td>
+                    {% else %}
+                    <td class="resigned_at">
+                        {% if resignation_form.resigned_at.value is None %}
+                        -
+                        {% else %}
+                        {{ resignation_form.resigned_at.value|date:"Y-m-d H:i"}}
+
+                        {% endif %}
+
+                    </td>
+                    {% endif %}
+                    <td class="grade">
+                        {{employee_form.grade}}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <table class="table">
+            <tr>
+                <td>권한명</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>가입 승인</td>
+                <td>{{employee_form.signup_approval_authorization}}</td>
+            </tr>
+            <tr>
+                <td>회원 조회</td>
+                <td>{{employee_form.list_read_authorization}}</td>
+            </tr>
+            <tr>
+                <td>회원 수정</td>
+                <td>{{employee_form.update_authorization}}</td>
+            </tr>
+            <tr>
+                <td>회원 삭제</td>
+                <td>{{employee_form.resign_authorization}}</td>
+            </tr>
+        </table>
+        <div class="reason-input">
+            {% if signup_list %}
+            {{user_form.reason_for_refusal}}
+            <div class="form-item-error" id="errors_reasons_for_refusal">
+                {{ user_form.reason_for_refusal.errors }}
+            </div>
+            {% else %}
+            {{resignation_form.reason_for_resignation}}
+            <div class="form-item-error" id="errors_reason_for_resignation">
+                {{resignation_form.reason_for_resignation.errors }}
+            </div>
+            {% endif %}
+        </div>
+        <div class="modal-footer">
+            {% if signup_list %}
+            <button class="button-submit" name="refusal-btn" type="submit">거절</button>
+            {% else %}
+            <button class="button-submit" name="resignation-btn" type="submit">탈퇴</button>
+            {% endif %}
+            <div class="button-wrapper">
+                <button class="button-submit" type="button">닫기</button>
+                {% if signup_list %}
+                <button class="button-submit" name="approval-btn" type="submit">승인</button>
+                {% else %}
+                <button class="button-submit" name="update-btn" type="submit">저장</button>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+</body>
+
+</html>
