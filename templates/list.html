@@ -49,7 +49,8 @@
                     {% endif %}
                 </td>
                 <td class="detail">
-                    <button type="button" class="modal-open-btn">상세</button>
+                    <button type="button" class="modal-open-btn"
+                        onclick="location.href='{% url 'signup_detail' account.id %}'">상세</button>
                 </td>
             </tr>
             {% endfor %}
@@ -63,7 +64,8 @@
                 <td class="created_at">{{employee.user.created_at|date:"Y-m-d H:i"}}</td>
                 <td class="last_login">{{employee.user.last_login|date:"Y-m-d H:i"}}</td>
                 <td class="detail">
-                    <button type="button" class="modal-open-btn">상세</button>
+                    <button type="button" class="modal-open-btn"
+                        onclick="location.href='{% url 'employee_detail' employee.id %}'">상세</button>
                 </td>
             </tr>
             {% endfor %}
@@ -73,6 +75,4 @@
     {% include 'pagination.html' %}
 
 </div>
-{% include 'detail.html' %}
-
 {% endblock content %}

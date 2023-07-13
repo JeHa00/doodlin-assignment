@@ -1,3 +1,4 @@
+
 {% load static %}
 
 <!DOCTYPE html>
@@ -7,7 +8,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{% static 'css/reset.css' %}">
-    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+
     {% block head_css %}
     {% endblock head_css%}
 
@@ -16,32 +18,33 @@
 
 <body>
     {% block header %}
-
     {% endblock header %}
+
     <main class="app">
         <section class="sidebar">
             {% if user.is_authenticated %}
             <div class="sidebar-menu">
                 {% if approval_authorization %}
-                <div onclick="location.href='{% url 'signup_list' %}'">가입 대기 목록</div>
+                <div style="cursor:pointer" class="signup-list" onclick="location.href='{% url 'signup_list' %}'">가입 대기
+                    목록</div>
                 {% endif %}
                 {% if read_authorization %}
-                <div onclick="location.href='{% url 'employee_list' %}'">회원 목록</div>
+                <div style="cursor:pointer" class="employee-list" onclick="location.href='{% url 'employee_list' %}'">회원
+                    목록</div>
                 {% endif %}
             </div>
-
             <div class="button-submit-wrap">
                 <button class="button-submit" type="submit" onclick="location.href='{% url 'logout' %}'">로그아웃</button>
             </div>
             {% endif %}
         </section>
-        <section class="main">
-
+        <section class="content">
             {% block content %}
-
             {% endblock content %}
         </section>
     </main>
+    {% block body_js %}
+    {% endblock body_js %}
 </body>
 
 </html>
