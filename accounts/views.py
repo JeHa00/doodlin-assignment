@@ -141,6 +141,14 @@ class EmployeeListView(ListView):
 
         return context
 
+    def get_queryset(self, **kwargs):
+        employee = Employee.objects.get(user_id=self.request.user.id)
+        if employee.authorization_grade == "MS":
+            queryset = Employee.objects.select_related("user")
+        else:
+            queryset = Employee.objects.select_related("user").exclude(is_resigned=True)
+        return queryset
+
 
 @login_required(login_url=reverse_lazy("login"))
 def signup_user_detail_view(request, user_id):
