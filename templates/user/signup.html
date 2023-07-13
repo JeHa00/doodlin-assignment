@@ -1,27 +1,20 @@
-{% extends "base.html" %}
+{% extends "index.html" %}
 {% load static %}
 
 {% block content %}
-<section class="sidebar">
-
-</section>
-
-<section class="signup">
-    <h3>회원 가입 신청 화면</h3>
-    <form action="{% url 'signup' %}" method="POST" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="form-item">{{form.email}}</div>
-        <div class="form-item-error" id="errors_email">{{ form.email.errors }}</div>
-        <div class="form-item">{{form.password}}</div>
-        <div class="form-item-error" id="errors_password">{{ form.password.errors }}</div>
-        <div class="form-item">{{form.password_confirm}}</div>
-        <div class="form-item-error" id="errors_password_confirm">{{ form.password_confirm.errors }}</div>
-        <div class="form-item">{{form.name}}</div>
-        <div class="form-item">{{form.phone}}</div>
-        <div class="form-item-error" id="errors_phone">{{ form.phone.errors }}</div>
-        <div class="button-submit-wrap">
-            <button class="button-submit" type="submit">회원가입</button>
-        </div>
-    </form>
-</section>
+<form action="{% url 'signup' %}" method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="form-item">{{form.email}}</div>
+    <div class="form-item-error" id="errors_email">{{ form.email.errors }}</div>
+    <div class="form-item">{{form.password}}</div>
+    <div class="form-item-error" id="errors_password">{{ form.password.errors }}</div>
+    <div class="form-item">{{form.password_confirm}}</div>
+    <div class="form-item-error" id="errors_password_confirm">{{ form.password_confirm.errors }}</div>
+    <div class="form-item">{{form.name}}</div>
+    <div class="form-item">{{form.phone}}</div>
+    <div class="form-item-error" id="errors_phone">{{ form.phone.errors }}</div>
+    <div class="button-submit-wrap">
+        <button class="button-submit signup" type="submit">가입하기</button>
+    </div>
+</form>
 {% endblock content %}

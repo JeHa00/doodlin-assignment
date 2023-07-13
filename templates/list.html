@@ -1,25 +1,26 @@
-{% extends "base.html" %}
+{% extends "index.html" %}
 {% load static %}
 
 {% block head_css %}
+<link rel="stylesheet" href="{% static 'css/list.css' %}">
 {% endblock head_css%}
 
 {% block content %}
 <div class="signup-wait-list">
     {% if signup_list %}
-    <h3>가입 대기 목록</h3>
+    <h3 class="table-title">가입 대기 목록</h3>
     {% else %}
-    <h3>회원 목록</h3>
+    <h3 class="table-title">회원 목록</h3>
     {% endif %}
 
     <table class="signup-wait-table">
         <thead>
             <tr>
-                <th>ID</th>
+                <th class="id">ID</th>
                 <th>이메일</th>
+                <th>이름</th>
                 {% if signup_list %}
                 <th>상태</th>
-                <th>이름</th>
                 <th>가입일시</th>
                 <th>거절일시</th>
                 {% else %}
@@ -28,7 +29,7 @@
                 <th>최근 로그인일시</th>
                 {% endif %}
 
-                <th></th>
+                <th id="detail"></th>
             </tr>
         </thead>
         <tbody>
@@ -48,7 +49,7 @@
                     {% endif %}
                 </td>
                 <td class="detail">
-                    <button type="button" onclick="location.href='{% url 'signup_detail' account.id %}'">상세</button>
+                    <button type="button" class="modal-open-btn">상세</button>
                 </td>
             </tr>
             {% endfor %}
@@ -57,11 +58,12 @@
             <tr>
                 <td class="id">{{employee.user.id}}</td>
                 <td class="email">{{employee.user.email}}</td>
+                <td class="name">{{employee.user.name}}</td>
                 <td class="grade">{{employee.get_authorization_grade_display}}</td>
                 <td class="created_at">{{employee.user.created_at|date:"Y-m-d H:i"}}</td>
                 <td class="last_login">{{employee.user.last_login|date:"Y-m-d H:i"}}</td>
                 <td class="detail">
-                    <button type="button" onclick="location.href='{% url 'employee_detail' employee.id %}'">상세</button>
+                    <button type="button" class="modal-open-btn">상세</button>
                 </td>
             </tr>
             {% endfor %}
@@ -71,4 +73,6 @@
     {% include 'pagination.html' %}
 
 </div>
+{% include 'detail.html' %}
+
 {% endblock content %}

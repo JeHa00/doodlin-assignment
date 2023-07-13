@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "index.html" %}
 {% load static %}
 
 {% block head_css %}
@@ -8,12 +8,12 @@
 {% block content %}
 {{ context }}
 {% if AP %}
-<div class="signup-wait">
+<div class="guide">
     <h3> 회원조회 권한이 없습니다. </h3>
     <h3>조회를 원하시면 관리자로부터 회원조회 권한을 인가받아야 합니다.</h3>
 </div>
 {% else %}
-<div class="signup-wait">
+<div class="guide">
     <h3> [[가입 대기]] </h3>
     <h3>관리자의 승인이 필요합니다. </h3>
 </div>

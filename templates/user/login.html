@@ -1,18 +1,23 @@
-{% extends "base.html" %}
+{% extends "index.html" %}
 {% load static %}
+
+
+{% block head_css %}
+<link rel="stylesheet" href="{% static 'css/login.css' %}">
+{% endblock head_css%}
 
 {% block content %}
 <form action="{% url 'login' %}" method="POST" enctype="multipart/form-data">
     {% csrf_token %}
-    <div class="form-item">{{form.email}}</div>
-    <div class="form-item-error" id="errors_email">{{ form.email.errors }}</div>
-    <div class="form-item">{{form.password}}</div>
-    <div class="form-item-error" id="errors_password">{{ form.password.errors }}</div>
-    <div class="button-submit-wrap">
-        <button class="button-submit" type="submit">로그인</button>
+    <div class="wrapper">
+        <div class="form-item">{{form.email}}</div>
+        <div class="form-item-error" id="errors_email">{{ form.email.errors }}</div>
+        <div class="form-item">{{form.password}}</div>
+        <div class="form-item-error" id="errors_password">{{ form.password.errors }}</div>
+        <div class="button-submit-wrap">
+            <button class="button-submit" type="submit">로그인</button>
+            <button class="button-submit" type="button" onclick="location.href='{% url 'signup' %}'">회원가입</button>
+        </div>
     </div>
 </form>
-<div class="button-submit-wrap">
-    <button class="button-submit" type="submit" onclick="location.href='{% url 'signup' %}'">회원가입</button>
-</div>
 {% endblock content %}
