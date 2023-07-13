@@ -1,9 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.hashers import make_password
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils.decorators import method_decorator
 from django.views.generic import FormView, ListView
-from django.views.generic.base import View, TemplateResponseMixin
 from django.contrib.auth import login, logout
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -15,12 +14,13 @@ from accounts.utils import (
     authorization_filter_on_signup_list,
 )
 from accounts.forms import (
+    ResignationForm,
     EmployeeForm,
     SignUpForm,
     LoginForm,
     UserForm,
 )
-from accounts.models import User, Employee
+from accounts.models import User, Employee, Resignation
 
 
 @login_required(login_url=reverse_lazy("login"))
@@ -217,5 +217,101 @@ def signup_user_detail_view(request, user_id):
         return render(request, "detail.html", context)
 
 
+@login_required(login_url=reverse_lazy("login"))
 def employee_detail_view(request, employee_id):
-    pass
+    def get_context_data(user_form, employee_form, resignation_form):
+        context = {
+            "user_form": user_form,
+            "employee_form": employee_form,
+            "resignation_form": resignation_form,
+            "signup_list": False,
+        }
+        return context
+
+    employee = get_object_or_404(Employee, pk=employee_id)
+    user = get_object_or_404(User, pk=employee.user_id)
+    if request.method == "POST":
+        user_form = UserForm(request.POST, instance=user)
+        employee_form = EmployeeForm(request.POST, instance=employee)
+        resignation_form = ResignationForm(request.POST)
+
+        if "resignation-btn" in request.POST:
+            if resignation_form.is_valid():
+                cleaned_data = resignation_form.cleaned_data
+                reason_for_resignation = cleaned_data.get("reason_for_resignation")
+                resigned_at = timezone.now()
+                resignation = Resignation.objects.create(
+                    resigned_user=employee,
+                    reason_for_resignation=reason_for_resignation,
+                    resigned_at=resigned_at,
+                )
+                resignation.save()
+                context = get_context_data(user_form, employee_form, resignation_form)
+                return redirect("employee_detail", employee_id)
+            return redirect("employee_detail", employee_id)
+        else:
+            if user_form.is_valid() and employee_form.is_valid():
+                user_cleaned_data = user_form.cleaned_data
+                employee_cleaned_data = employee_form.cleaned_data
+
+                # 수정될 user 정보
+                name = user_cleaned_data.get("name")
+                phone = user_cleaned_data.get("phone")
+                user.name = name
+                user.phone = phone
+                user.save(update_fields=["name", "phone"])
+
+                # 수정될 employee 정보
+                grade = employee_cleaned_data.get("grade")
+                authorizations = {
+                    "authorization_grade": grade,
+                    "signup_approval_authorization": employee_cleaned_data.get(
+                        "signup_approval_authorization"
+                    ),
+                    "list_read_authorization": employee_cleaned_data.get(
+                        "list_read_authorization"
+                    ),
+                    "update_authorization": employee_cleaned_data.get(
+                        "update_authorization"
+                    ),
+                    "resign_authorization": employee_cleaned_data.get(
+                        "resign_authorization"
+                    ),
+                }
+
+                employee.authorization_grade = grade
+                employee.signup_approval_authorization = authorizations.get(
+                    "signup_approval_authorization"
+                )
+                employee.list_read_authorization = authorizations.get(
+                    "list_read_authorization"
+                )
+                employee.update_authorization = authorizations.get(
+                    "update_authorization"
+                )
+                employee.resign_authorization = authorizations.get(
+                    "resign_authorization"
+                )
+                employee.save(
+                    update_fields=[
+                        "authorization_grade",
+                        "signup_approval_authorization",
+                        "list_read_authorization",
+                        "update_authorization",
+                        "resign_authorization",
+                    ]
+                )
+
+                context = get_context_data(user_form, employee_form, resignation_form)
+                return redirect("employee_detail", employee_id)
+    else:
+        user_form = UserForm(instance=user)
+        employee_form = EmployeeForm(instance=employee)
+        try:
+            resignation = Resignation.objects.get(resigned_user_id=employee.id)
+            resignation_form = ResignationForm(instance=resignation)
+        except ObjectDoesNotExist:
+            resignation_form = ResignationForm()
+
+        context = get_context_data(user_form, employee_form, resignation_form)
+        return render(request, "detail.html", context)
