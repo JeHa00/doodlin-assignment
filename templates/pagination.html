@@ -1,0 +1,32 @@
+<div class="pagination">
+    <ul>
+        {% if object_list.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ object_list.previous_page_number }}">이전</a>
+        </li>
+        {% else %}
+        {{object_list.has_previous}}
+        <li class="page-item disabled">
+            <a class="page-link" tabindex="-1" aria-disabled="true" href="#">이전</a>
+        </li>
+        {% endif %}
+
+        {% for page_number in paginator.page_range %}
+        {% if page_number >= object_list.number|add:-2 and object_list.number >= page_number|add:2 %}
+        <li class="page-item {% if page_number == object_list.number %} active {% endif %}" aria-current="page">
+            <a class="page-link" href="?page={{ page_number }}">{{ page_number }}</a>
+        </li>
+        {% endif %}
+        {% endfor %}
+
+        {% if object_list.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ object_list.next_page_number }}">다음</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <a class="page-link" tabindex="-1" aria-disabled="true" href="#">다음</a>
+        </li>
+        {% endif %}
+    </ul>
+</div>
