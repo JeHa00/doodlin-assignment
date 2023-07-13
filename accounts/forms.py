@@ -158,6 +158,7 @@ class EmployeeForm(forms.ModelForm):
             "list_read_authorization",
             "update_authorization",
             "resign_authorization",
+            "is_resigned",
         ]
 
 

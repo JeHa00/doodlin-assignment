@@ -254,9 +254,15 @@ def employee_detail_view(request, employee_id):
                     resigned_at=resigned_at,
                 )
                 resignation.save()
+
+                # 임직원 퇴사 유무 확인 정보 업데이트
+                employee.is_resigned = True
+                employee.save(update_fields=["is_resigned"])
+
                 context = get_context_data(user_form, employee_form, resignation_form)
                 return redirect("employee_detail", employee_id)
             return redirect("employee_detail", employee_id)
+        # 퇴사 처리 이외 정보 변경 시도 의미
         else:
             if user_form.is_valid() and employee_form.is_valid():
                 user_cleaned_data = user_form.cleaned_data
