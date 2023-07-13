@@ -7,9 +7,9 @@
 {% block content %}
 <div class="signup-wait-list">
     {% if signup_list %}
-    <h3>가입 대기</h3>
+    <h3>가입 대기 목록</h3>
     {% else %}
-    <h3>유저</h3>
+    <h3>회원 목록</h3>
     {% endif %}
 
     <table class="signup-wait-table">
@@ -38,7 +38,7 @@
                 <td class="id">{{account.id}}</td>
                 <td class="email">{{account.email}}</td>
                 <td class="state">{{account.get_state_display}}</td>
-                <td class="username">{{account.username}}</td>
+                <td class="name">{{account.name}}</td>
                 <td class="created_at">{{account.created_at|date:"Y-m-d H:i"}}</td>
                 <td class="rejected_at">
                     {% if account.rejected_at is none %}
