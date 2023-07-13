@@ -86,12 +86,13 @@ class SignUpForm(forms.Form):
 
 class LoginForm(forms.Form):
     email = forms.EmailField(
-        label="이메일", widget=forms.EmailInput(attrs={"placeholder": "이메일"})
+        label="이메일",
+        widget=forms.EmailInput(attrs={"placeholder": "example@example.com"}),
     )
     password = forms.CharField(
         label="비밀번호",
         widget=forms.PasswordInput(
-            attrs={"placeholder": "비밀번호", "autocomplete": "new-password"}
+            attrs={"placeholder": "PASSWORD", "autocomplete": "new-password"}
         ),
     )
 
