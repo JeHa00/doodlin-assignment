@@ -123,6 +123,7 @@ class UserForm(forms.ModelForm):
         required=False,
         widget=forms.Textarea(attrs={"placeholder": "거절 시 거절 사유를 기입하세요.", "rows": 2}),
     )
+
     state = forms.CharField(label="상태", required=False)
 
     class Meta:
@@ -147,7 +148,10 @@ class UserForm(forms.ModelForm):
 class EmployeeForm(forms.ModelForm):
     authorization_choices = [("", ""), ("MA", "관리자"), ("ST", "일반")]
     grade = forms.ChoiceField(
-        label="등급", choices=authorization_choices, initial={"authorization_choices": ""}
+        label="등급",
+        choices=authorization_choices,
+        initial={"authorization_choices": ""},
+        required=False,
     )
 
     class Meta:
@@ -160,6 +164,13 @@ class EmployeeForm(forms.ModelForm):
             "resign_authorization",
             "is_resigned",
         ]
+
+    def clean_grade(self):
+        if "approval-btn" in self.data:
+            grade = self.cleaned_data.get("grade")
+            if not grade:
+                raise ValidationError("승인 시에는 반드시 등급을 선택해야 합니다.")
+        return grade
 
 
 class ResignationForm(forms.ModelForm):

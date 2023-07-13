@@ -166,28 +166,22 @@ def signup_user_detail_view(request, user_id):
         user_form = UserForm(request.POST, instance=user)
 
         if user_form.is_valid():
-            state = user_form.cleaned_data.get("state")
-            user.state = state
-
-            if "refusal-btn" in request.POST:
+            if "refusal-btn" in request.POST:  # 가입 신청 거절 시 진입
+                # User 거절 관련 정보 업데이트
                 reason_for_refusal = user_form.cleaned_data.get("reason_for_refusal")
                 rejected_at = timezone.now()
                 user.reason_for_refusal = reason_for_refusal
                 user.rejected_at = rejected_at
+                user.state = "RJ"
 
                 fields_to_be_updated = ["state", "reason_for_refusal", "rejected_at"]
                 user.save(update_fields=fields_to_be_updated)
 
-                employee_form = EmployeeForm(request.POST)
-                context = get_context_data(user_form, employee_form)
-
-                return render(request, "detail.html", context)
-            else:
-                fields_to_be_updated = ["state"]
-                user.save(update_fields=fields_to_be_updated)
-
+                return redirect("signup_list")
+            else:  # 가입 신청 승인 시 진입
                 employee_form = EmployeeForm(request.POST)
 
+                # Employee 객체 생성
                 if employee_form.is_valid():
                     cleaned_data = employee_form.cleaned_data
                     grade = employee_form.data.get("grade")
@@ -213,15 +207,23 @@ def signup_user_detail_view(request, user_id):
                     )
                     employee.save()
 
-                    context = get_context_data(user_form, employee_form)
+                    user.state = "AP"
+                    user.save(update_fields=["state"])
 
+                    return redirect("signup_list")
+                else:
+                    user_form = UserForm(instance=user)
+                    context = get_context_data(user_form, employee_form)
                     return render(request, "detail.html", context)
+        else:
+            employee_form = EmployeeForm()
+            context = get_context_data(user_form, employee_form)
+            return render(request, "detail.html", context)
 
     else:
         user_form = UserForm(instance=user)
         employee_form = EmployeeForm()
         context = get_context_data(user_form, employee_form)
-
         return render(request, "detail.html", context)
 
 
