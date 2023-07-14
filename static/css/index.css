@@ -256,6 +256,12 @@ td {
     height: 5vh;
 }
 
+.user-table .email input {
+    width: 10vw;
+    font-size: 2vh;
+    text-align: center;
+}
+
 .user-table .name input {
     width: 5vw;
     font-size: 2vh;
