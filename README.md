@@ -29,15 +29,15 @@
     - ex: `pyenv virtualenv 3.10.10 assignment`
     - pyenv 설치 명령어: `curl -sSL https://install.python-poetry.org | python3 -`
 3. 설치된 가상환경 실행하기: `pyenv shell {가상환경 이름}`
-    - ex: `pyenv shell assignment`  
+    - ex: `pyenv shell assignment`
 4. 프로젝트 내부로 이동합니다. (git clone 하여 생긴 directory 내부로 이동)
 5. `poetry init` 실행: git clone으로 가져왔다면 이미 특정 파일이 존재한다는 에러가 떴다면 성공입니다.
 6. `poetry env info` 를 입력하여 **Virtualenv** 와 **System** 이 모두 pyenv를 바라보는지 확인합니다.
 7. 확인하였다면 `poetry install` 로 디펜던시들을 설치합니다.
 8. 다 설치가 되었다면 `python manage.py runserver` 를 하기 전에 `python manage.py migrate` 를 실행합니다.
-9. `python manage.py runserver`를 통해 실행합니다.  
+9. `python manage.py runserver`를 통해 실행합니다.
 
-참조: pyenv와 poetry로 가상환경을 구성하는 게 어렵다면 [Poetry 와 Pyenv의 자주 사용하는 명령어 정리](https://jeha00.github.io/post/python/a_s_o/poetry_pyenv/#3-poetry%EC%99%80-pyenv-%EC%82%AC%EC%9A%A9-%EC%88%9C%EC%84%9C)에 정리를 해놨으니 참고하시길 바랍니다.  
+참조: pyenv와 poetry로 가상환경을 구성하는 게 어렵다면 [Poetry 와 Pyenv의 자주 사용하는 명령어 정리](https://jeha00.github.io/post/python/a_s_o/poetry_pyenv/#3-poetry%EC%99%80-pyenv-%EC%82%AC%EC%9A%A9-%EC%88%9C%EC%84%9C)에 정리를 해놨으니 참고하시길 바랍니다.
 
 <br>
 
@@ -46,7 +46,7 @@
 마스터 계정은 admin 또는 직접 생성한 후 진행하는 걸로 생각했습니다.
 superuser인 루트 계정은 별도로 생성하시고, 아래 과정을 따라서 먼저 마스터 계정을 생성하겠습니다.
 
-- config.local은 local 실행을 위한 모의 계정들을 생성하기 위해 만든 파일입니다.  
+- config.local은 local 실행을 위한 모의 계정들을 생성하기 위해 만든 파일입니다.
 
 ```python
 python manage.py shell
@@ -123,7 +123,7 @@ ALTER TABLE `Resignation` ADD CONSTRAINT `PK_RESIGNATION` PRIMARY KEY (
 );
 ```
 
-- ERD CLOUD를 통해서 ERD를 그린 후 추출한 SQL 입니다.  
+- ERD CLOUD를 통해서 ERD를 그린 후 추출한 SQL 입니다.
 
 <br>
 
@@ -131,7 +131,7 @@ ALTER TABLE `Resignation` ADD CONSTRAINT `PK_RESIGNATION` PRIMARY KEY (
 
 # 3. 프로젝트 설계 구조
 
-## 사용 기술 및 환경  
+## 사용 기술 및 환경
 
 - Python 3.10.10, Django 4.2.3
 - DB: sqlite3
@@ -143,18 +143,18 @@ API 생성을 위한 DRF나 React.js library를 사용하는 것과 javascript �
 
 ## 요구사항
 
-- `추가로 구성해볼 수 있을 만한 기능` 으로 언급된 것들 외에 요구사항은 제가 이해한 바로는 모두 만족했습니다.  
+- `추가로 구성해볼 수 있을 만한 기능` 으로 언급된 것들 외에 요구사항은 제가 이해한 바로는 모두 만족했습니다.
 
 <br>
 
 ## Commit message
 
 - REFACTOR(refactoring), FEAT(feature), DOCS(documents), CONF(configure) 로 commit tag를 구성하여 진행했습니다.
-- 단 최대한 쪼개서 진행했으며, 메시지만으로 무엇을 한 건지 명시적으로 알 수 있도록 작성했습니다.  
+- 단 최대한 쪼개서 진행했으며, 메시지만으로 무엇을 한 건지 명시적으로 알 수 있도록 작성했습니다.
 
 <br>
 
-### 화면 layout 과 styling  
+### 화면 layout 과 styling
 
 - 첨부된 와이어프레임과 레이아웃이 최대한 동일하게 했습니다. 폰트 종류, size 차이는 존재할 수 있습니다.
 
@@ -162,14 +162,14 @@ API 생성을 위한 DRF나 React.js library를 사용하는 것과 javascript �
 
 ### Model 설계 방향성
 
-- 하나의 모델만 만들어서 다양한 속성들을 담을 수도 있지만 그런 경우 테이블 자체가 너무 커지고, 비어있는 데이터가 많아집니다.  
+- 하나의 모델만 만들어서 다양한 속성들을 담을 수도 있지만 그런 경우 테이블 자체가 너무 커지고, 비어있는 데이터가 많아집니다.
 
 - 그래서 User model -> Employee model -> Resignation model 로 실 사용 시 흐름을 따라 모델을 설계했습니다.
 
 <br>
 
-### 프로젝트 app 구조  
+### 프로젝트 app 구조
 
 - config: 프로젝트 설정이 담겨있는 directory
 - accounts: 프로젝트 요구사항이 들어있는 directory
-- DDD 같은 구조가 아닌 Django의 MTV 패턴에 맞게 프로젝트 구조를 구성했습니다.  
+- DDD 같은 구조가 아닌 Django의 MTV 패턴에 맞게 프로젝트 구조를 구성했습니다.

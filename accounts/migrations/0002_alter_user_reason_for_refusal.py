@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
             model_name="user",
             name="reason_for_refusal",
             field=models.CharField(
-                blank=True, max_length=50, null=True, verbose_name="회원가입 신청 거절 사유"
+                blank=True, max_length=50, null=True, verbose_name="회원가입 신청 거절 사유",
             ),
         ),
     ]

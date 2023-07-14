@@ -38,7 +38,8 @@ def authorization_filter_on_employee_list(function) -> Any:
         function (func):  EmployeeListView를 의미한다.
 
     Returns:
-        Any: 임직원으로 등록되어 있지 않거나, 조회 권한이 없으면 guide view로 이동한다.
+        Any: 임직원으로 등록되어 있지 않거나, 조회 권한이 없으면
+             guide view로 이동한다.
     """
 
     def decorator_func(request):
@@ -68,7 +69,7 @@ def get_authorizations(current_user_grade: str, cleaned_data: dict) -> dict:
         authorizations = {
             "authorization_grade": cleaned_data.get("authorization_grade"),
             "signup_approval_authorization": cleaned_data.get(
-                "signup_approval_authorization"
+                "signup_approval_authorization",
             ),
             "list_read_authorization": cleaned_data.get("list_read_authorization"),
             "update_authorization": cleaned_data.get("update_authorization"),
@@ -78,7 +79,7 @@ def get_authorizations(current_user_grade: str, cleaned_data: dict) -> dict:
     elif current_user_grade == "MA":
         authorizations = {
             "signup_approval_authorization": cleaned_data.get(
-                "signup_approval_authorization"
+                "signup_approval_authorization",
             ),
             "list_read_authorization": cleaned_data.get("list_read_authorization"),
             "update_authorization": cleaned_data.get("update_authorization"),
@@ -193,7 +194,8 @@ class CheckAuthAndAddError:
                     next_target_field = user_form.cleaned_data[target_field]
                     if previous_target_field != next_target_field:
                         user_form.add_error(
-                            target_field, f"해당 유저의 {field_error}을 변경할 권한이 없습니다."
+                            target_field,
+                            f"해당 유저의 {field_error}을 변경할 권한이 없습니다.",
                         )
                         return False
 
@@ -201,7 +203,8 @@ class CheckAuthAndAddError:
                     return True
             else:  # 회원 수정 권한이 없을 때
                 user_form.add_error(
-                    target_field, f"해당 유저의 {field_error}을 변경할 권한이 없습니다."
+                    target_field,
+                    f"해당 유저의 {field_error}을 변경할 권한이 없습니다.",
                 )
                 return False
         else:  # "ST" 일 때
@@ -212,7 +215,8 @@ class CheckAuthAndAddError:
             next_target_field = user_form.cleaned_data[target_field]
             if previous_target_field != next_target_field:
                 user_form.add_error(
-                    target_field, f"해당 유저의 {field_error}을 변경할 권한이 없습니다."
+                    target_field,
+                    f"해당 유저의 {field_error}을 변경할 권한이 없습니다.",
                 )
                 return False
 

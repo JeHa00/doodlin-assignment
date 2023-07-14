@@ -235,7 +235,6 @@ def signup_user_detail_view(request, user_id):
 def employee_detail_view(request, employee_id):
     target_employee = get_object_or_404(Employee, pk=employee_id)
     target_user = get_object_or_404(User, pk=target_employee.user_id)
-    current_employee = get_object_or_404(Employee, user_id=request.user.id)
 
     compare_auth_and_add_error = CheckAuthAndAddError(request.user.id, target_user.id)
 
@@ -290,7 +289,10 @@ def employee_detail_view(request, employee_id):
             if user_form.is_valid() and employee_form.is_valid():
                 update_fields = []
                 compare_auth_and_add_error.check_in_employee_list(
-                    employee_form, user_form, "name", "phone"
+                    employee_form,
+                    user_form,
+                    "name",
+                    "phone",
                 )
 
                 for key, value in employee_form.cleaned_data.items():

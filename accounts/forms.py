@@ -10,24 +10,24 @@ from accounts.models import User, Employee, Resignation
 
 class SignUpForm(forms.Form):
     email = forms.EmailField(
-        label="이메일", widget=forms.EmailInput(attrs={"placeholder": "이메일"})
+        label="이메일", widget=forms.EmailInput(attrs={"placeholder": "이메일"}),
     )
     name = forms.CharField(
-        label="이름", widget=forms.TextInput(attrs={"placeholder": "이름"})
+        label="이름", widget=forms.TextInput(attrs={"placeholder": "이름"}),
     )
     phone = forms.CharField(
-        label="연락처", widget=forms.TextInput(attrs={"placeholder": "01012345678"})
+        label="연락처", widget=forms.TextInput(attrs={"placeholder": "01012345678"}),
     )
     password = forms.CharField(
         label="비밀번호",
         widget=forms.PasswordInput(
-            attrs={"placeholder": "PASSWORD", "autocomplete": "new-password"}
+            attrs={"placeholder": "PASSWORD", "autocomplete": "new-password"},
         ),
     )
     password_confirm = forms.CharField(
         label="비밀번호 확인",
         widget=forms.PasswordInput(
-            attrs={"placeholder": "PASSWORD 확인", "autocomplete": "new-password"}
+            attrs={"placeholder": "PASSWORD 확인", "autocomplete": "new-password"},
         ),
     )
 
@@ -96,13 +96,13 @@ class SignUpForm(forms.Form):
 
         if validation.match(str(password)) is None:
             raise ValidationError(
-                {"password": "비밀번호는 문자, 숫자, 특수문자 각 하나 이상을 포함하여 8자리 이상으로 작성해주세요."}
+                {"password": "비밀번호는 문자, 숫자, 특수문자 각 하나 이상을 포함하여 8자리 이상으로 작성해주세요."},
             )
         elif validation.match(str(password_confirm)) is None:
             raise ValidationError(
                 {
-                    "password_confirm": "비밀번호는 문자, 숫자, 특수문자 각 하나 이상을 포함하여 8자리 이상으로 작성해주세요."
-                }
+                    "password_confirm": "비밀번호는 문자, 숫자, 특수문자 각 하나 이상을 포함하여 8자리 이상으로 작성해주세요.",
+                },
             )
         elif password and password_confirm:
             if password != password_confirm:
@@ -110,7 +110,7 @@ class SignUpForm(forms.Form):
                     {
                         "password": ["비밀번호가 일치하지 않습니다."],
                         "password_confirm": ["비밀번호가 일치하지 않습니다."],
-                    }
+                    },
                 )
         return cleaned_data
 
@@ -123,7 +123,7 @@ class LoginForm(forms.Form):
     password = forms.CharField(
         label="비밀번호",
         widget=forms.PasswordInput(
-            attrs={"placeholder": "PASSWORD", "autocomplete": "new-password"}
+            attrs={"placeholder": "PASSWORD", "autocomplete": "new-password"},
         ),
     )
 
@@ -234,7 +234,7 @@ class ResignationForm(forms.ModelForm):
         label="탈퇴 사유",
         required=False,
         widget=forms.Textarea(
-            attrs={"placeholder": "탈퇴 시킬 시 탈퇴 사유를 기입하세요.", "rows": 2}
+            attrs={"placeholder": "탈퇴 시킬 시 탈퇴 사유를 기입하세요.", "rows": 2},
         ),
     )
 
@@ -274,7 +274,7 @@ class ResignationForm(forms.ModelForm):
             cleaned_data = super(ResignationForm, self).clean()
 
             user = User.objects.filter(
-                name=self.data.get("name"), phone=self.data.get("phone")
+                name=self.data.get("name"), phone=self.data.get("phone"),
             ).last()
 
             employee = Employee.objects.filter(user_id=user.id).last()

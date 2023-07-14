@@ -1,5 +1,3 @@
-from typing import Any
-
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from django.conf import settings
@@ -33,10 +31,15 @@ class User(AbstractUser, BaseModel):
         default=StateChoices.AWAIT,
     )
     rejected_at = models.DateTimeField(
-        verbose_name="회원가입 신청 거절일시", blank=True, null=True
+        verbose_name="회원가입 신청 거절일시",
+        blank=True,
+        null=True,
     )
     reason_for_refusal = models.CharField(
-        verbose_name="회원가입 신청 거절 사유", blank=True, null=True, max_length=50
+        verbose_name="회원가입 신청 거절 사유",
+        blank=True,
+        null=True,
+        max_length=50,
     )
 
     def __str__(self):
@@ -58,7 +61,7 @@ class User(AbstractUser, BaseModel):
         """User의 가장 마지막 로그인 시간을 업데이트한다.
 
         Returns:
-            - bool: 성공시 True 
+            - bool: 성공시 True
         """
         self.last_login = timezone.now()
         self.save(update_fields=["last_login"])
@@ -83,7 +86,8 @@ class Employee(models.Model):
         null=True,
     )
     signup_approval_authorization = models.BooleanField(
-        verbose_name="가입 승인 권한", default=False
+        verbose_name="가입 승인 권한",
+        default=False,
     )
 
     list_read_authorization = models.BooleanField(
@@ -116,7 +120,9 @@ class Employee(models.Model):
 
 class Resignation(models.Model):
     resigned_user = models.OneToOneField(
-        Employee, verbose_name="퇴사자", on_delete=models.CASCADE
+        Employee,
+        verbose_name="퇴사자",
+        on_delete=models.CASCADE,
     )
     reason_for_resignation = models.CharField(verbose_name="퇴사 사유", max_length=50)
     resigned_at = models.DateTimeField(verbose_name="퇴사일", blank=True, null=True)
