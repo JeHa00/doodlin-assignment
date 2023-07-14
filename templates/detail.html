@@ -1,18 +1,11 @@
+{% extends "index.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'css/detail.css' %}">
-    <title>Document</title>
-</head>
-
-<body>
+{% block content %}
+<div class="detail-view">
     <form action="" method="POST" enctype="multipart/form-data">
         {% csrf_token %}
-        <table class="table">
+        <table class="user-table">
             <thead>
                 <tr>
                     <th>이메일</th>
@@ -28,29 +21,36 @@
             </thead>
             <tbody>
                 <tr>
-                    <td class="email">{{user_form.email.value}}</td>
+                    <td class="email">{{user_form.email}}</td>
                     <td class="name">{{user_form.name}}</td>
                     <td class="phone">{{user_form.phone}}</td>
                     {% if signup_list %}
-                    <td class="state">{{user_form.state}}</td>
+                    <td class="state">
+                        {% if user_form.state.value == "AW" %}
+                        대기
+                        {% elif user_form.state.value == "AP" %}
+                        승인
+                        {% endif %}
+                    </td>
                     {% else %}
                     <td class="resigned_at">
                         {% if resignation_form.resigned_at.value is None %}
                         -
                         {% else %}
                         {{ resignation_form.resigned_at.value|date:"Y-m-d H:i"}}
-
                         {% endif %}
-
                     </td>
                     {% endif %}
                     <td class="grade">
                         {{employee_form.grade}}
                     </td>
+                    <div class="form-item-error" id="errors_grade">
+                        {{ employee_form.grade.errors }}
+                    </div>
                 </tr>
             </tbody>
         </table>
-        <table class="table">
+        <table class="authorization-table">
             <tr>
                 <td>권한명</td>
                 <td></td>
@@ -72,7 +72,7 @@
                 <td>{{employee_form.resign_authorization}}</td>
             </tr>
         </table>
-        <div class="reason-input">
+        <div class="reason-input-wrapper">
             {% if signup_list %}
             {{user_form.reason_for_refusal}}
             <div class="form-item-error" id="errors_reasons_for_refusal">
@@ -85,22 +85,24 @@
             </div>
             {% endif %}
         </div>
-        <div class="modal-footer">
+        <div class="detail-footer">
             {% if signup_list %}
             <button class="button-submit" name="refusal-btn" type="submit">거절</button>
             {% else %}
             <button class="button-submit" name="resignation-btn" type="submit">탈퇴</button>
             {% endif %}
             <div class="button-wrapper">
-                <button class="button-submit" type="button">닫기</button>
                 {% if signup_list %}
+                <button class="button-submit modal-close-btn" type="button"
+                    onclick="location.href='{% url 'signup_list' %}'">닫기</button>
                 <button class="button-submit" name="approval-btn" type="submit">승인</button>
                 {% else %}
+                <button class="button-submit modal-close-btn" type="button"
+                    onclick="location.href='{% url 'employee_list' %}'">닫기</button>
                 <button class="button-submit" name="update-btn" type="submit">저장</button>
                 {% endif %}
             </div>
         </div>
     </form>
-</body>
-
-</html>
+</div>
+{% endblock content %}
