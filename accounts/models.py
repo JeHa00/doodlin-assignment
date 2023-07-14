@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from django.conf import settings
@@ -44,10 +46,20 @@ class User(AbstractUser, BaseModel):
         verbose_name = "회원가입 내역"
         verbose_name_plural = "회원가입 내역 목록"
 
-    def get_password(self):
+    def get_password(self) -> str:
+        """User object의 패스워드를 반환한다.
+
+        Returns:
+            str: 문자열로 된 패스워드 정보
+        """
         return self.password
 
-    def update_last_login(self):
+    def update_last_login(self) -> bool:
+        """User의 가장 마지막 로그인 시간을 업데이트한다.
+
+        Returns:
+            - bool: 성공시 True 
+        """
         self.last_login = timezone.now()
         self.save(update_fields=["last_login"])
         return True

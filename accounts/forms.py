@@ -31,7 +31,17 @@ class SignUpForm(forms.Form):
         ),
     )
 
-    def clean_email(self):
+    def clean_email(self) -> str:
+        """회원가입 시 입력한 이메일에 대해 유효성 검증을 한다.
+
+        Raises:
+            ValidationError: 이미 존재하는 이메일일 경우 발생
+            ValidationError: 내부 이메일 로직에 맞지 않을 경우 발생
+
+        Returns:
+            str: 유효성 검증에 통과한 이메일을 반환한다.
+        """
+
         email = self.cleaned_data.get("email")
 
         match = "^[a-zA-Z0-9_]+@[a-zA-Z0-9_]+\.[a-zA-Z0-9.]+$"
@@ -45,7 +55,18 @@ class SignUpForm(forms.Form):
 
         return email
 
-    def clean_phone(self):
+    def clean_phone(self) -> str:
+        """휴대폰 번호에 대해 아래 조건에 대해 유효성 검증을 한다.
+        - 010부터 019까지의 핸드폰 번호를 포함한다.
+        - 가운데 자리는 3자리 또는 4자리
+        - 가장 마지막 자리는 4자리
+
+        Raises:
+            ValidationError: 휴대폰 번호가 정규식 표현에 맞지 않을 경우 발생
+
+        Returns:
+            str: 유효성 검증에 통과한 휴대폰 번호를 반환한다.
+        """
         phone = self.cleaned_data.get("phone")
         match = "^(01[0-9]{1})([0-9]{3,4})([0-9]{4})$"
         validation = re.compile(match)
@@ -54,7 +75,17 @@ class SignUpForm(forms.Form):
             raise ValidationError("정확한 전화번호를 입력해주세요.")
         return phone
 
-    def clean(self):
+    def clean(self) -> dict:
+        """가입 시 입력된 비밀번호가 내부 정책에 적합한지와 패스워드와 확인 패스워드가 일치한지 확인한다.
+
+        Raises:
+            ValidationError: 패스워드가 내부 정책에 적합하지 않으면 발생한다.
+            ValidationError: 확인 패스워드가 내부 정책에 적합하지 않으면 발생한다.
+            ValidationError: 내부 정책에는 적합하지만 패스워드와 확인 패스워드가 일치하지 않으면 발생한다.
+
+        Returns:
+            dict: SignUpForm 의 유효성 검증에 통과한 전체 데이터를 반환한다.
+        """
         cleaned_data = super(SignUpForm, self).clean()
 
         password = cleaned_data.get("password")
@@ -96,7 +127,17 @@ class LoginForm(forms.Form):
         ),
     )
 
-    def clean(self):
+    def clean(self) -> dict:
+        """로그인 시 입력한 이메일과 패스워드에 대해 유효성 검증을 실시한다.
+
+
+        Raises:
+            ValidationError: 입력한 비밀번호가 입려한 이메일로 저장된 유저의 비밀번호가 다를 경우 발생한다.
+            ValidationError: 입력한 이메일이 가입되지 않은 이메일이면 발생한다.
+
+        Returns:
+            dict: LoginForm 의 유효성 검증에 통과한 전체 데이터를 반환한다.
+        """
         cleaned_data = super(LoginForm, self).clean()
         email = cleaned_data.get("email")
         password = cleaned_data.get("password")
@@ -137,7 +178,22 @@ class UserForm(forms.ModelForm):
             "reason_for_refusal",
         ]
 
-    def clean_reason_for_refusal(self):
+    def clean_reason_for_refusal(self) -> str:
+        """회원가입 신청 거절 시 거절 사유에 대한 유효성 검증을 실시한다.
+            가입 대기 목록에서 상세 화면 상황 중 승인을 거절할 시
+            거절 사유를 입력하지 않으면 에러를 발생시킨다.
+
+            또한 거절 권한이 없을 경우 self.errors에 에러 내용이 저장되어
+            화면에 나타난다.
+
+
+        Raises:
+            ValidationError: 거절 사유 미입력 시 발생한다.
+            - 거절이 없을 경우 발생
+
+        Returns:
+            str: 입력된 거절 사유가 반환된다.
+        """
         if "refusal-btn" in self.data:
             reason_for_refusal = self.cleaned_data.get("reason_for_refusal")
             if self.errors:
@@ -168,7 +224,6 @@ class EmployeeForm(forms.ModelForm):
         ]
 
 
-
 class ResignationForm(forms.ModelForm):
     resigned_at = forms.DateTimeField(
         label="탈퇴일시",
@@ -187,14 +242,34 @@ class ResignationForm(forms.ModelForm):
         model = Resignation
         fields = ["reason_for_resignation", "resigned_at"]
 
-    def clean_reason_for_resignation(self):
+    def clean_reason_for_resignation(self) -> str:
+        """퇴사 사유에 대해 유효성 검증을 실시한다.
+            회원 목록의 상세 화면에서 임직원을 퇴사시킬 시 퇴사 사유를 입력 되었는지
+            퇴사 시킬 권한이 있는지 확인한다.
+
+        Raises:
+            ValidationError: 퇴사 사유 미 입력 시 발생
+            - 또한 resign_authorization이 false이면 발생
+            - view와 utils.py에서 확인할 수 있다.
+
+        Returns:
+            str: 유효성 검증을 통과한 퇴사 사유를 반환한다.
+        """
         if "resignation-btn" in self.data:
             reason_for_resignation = self.cleaned_data.get("reason_for_resignation")
             if not reason_for_resignation:
                 raise ValidationError("퇴사 사유를 입력해야 탈퇴시킬 수 있습니다.")
             return reason_for_resignation
 
-    def clean(self):
+    def clean(self) -> dict:
+        """ResignationForm에 입력된 전체 데이터에 대한 유효성 검증을 실시한다.
+
+        Raises:
+            ValidationError: 이미 탈퇴된 유저인 경우 (Resignation 인스턴스인 경우)
+
+        Returns:
+            dict: 유효성 검증이 통과된 ResignationForm 데이터를 반환한다.
+        """
         if "resignation-btn" in self.data:
             cleaned_data = super(ResignationForm, self).clean()
 
