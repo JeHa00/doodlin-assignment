@@ -190,3 +190,25 @@ class ResignationForm(forms.ModelForm):
     class Meta:
         model = Resignation
         fields = ["reason_for_resignation", "resigned_at"]
+
+    def clean_reason_for_resignation(self):
+        if "resignation-btn" in self.data:
+            reason_for_resignation = self.cleaned_data.get("reason_for_resignation")
+            if not reason_for_resignation:
+                raise ValidationError("퇴사 사유를 입력해야 퇴사 상태로 바꿀 수 있습니다.")
+            return reason_for_resignation
+
+    def clean(self):
+        cleaned_data = super(ResignationForm, self).clean()
+        user = User.objects.filter(
+            name=self.data.get("name"), phone=self.data.get("phone")
+        ).last()
+        employee = Employee.objects.get(user_id=user.id)
+        if not employee.resign_authorization:
+            raise ValidationError({"reason_for_resignation": "탈퇴 시킬 권한이 없습니다."})
+
+        resigned_user = Employee.objects.filter(id=employee.resigned_user.id).last()
+        if resigned_user:
+            raise ValidationError({"reason_for_resignation": "이미 탈퇴된 유저입니다."})
+
+        return cleaned_data
