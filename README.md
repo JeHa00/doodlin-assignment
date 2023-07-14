@@ -131,12 +131,45 @@ ALTER TABLE `Resignation` ADD CONSTRAINT `PK_RESIGNATION` PRIMARY KEY (
 
 # 3. 프로젝트 설계 구조
 
+## 사용 기술 및 환경  
 
+- Python 3.10.10, Django 4.2.3
+- DB: sqlite3
+- formatting: black, pre-commit hook
 
+API 생성을 위한 DRF나 React.js library를 사용하는 것과 javascript 없이 django의 template tag와 form을 통한 유효성 검증을 하는 방식으로 프로젝트 구조를 구성했습니다.
 
+<br>
 
+## 요구사항
 
+- `추가로 구성해볼 수 있을 만한 기능` 으로 언급된 것들 외에 요구사항은 제가 이해한 바로는 모두 만족했습니다.  
 
+<br>
 
+## Commit message
 
+- REFACTOR(refactoring), FEAT(feature), DOCS(documents), CONF(configure) 로 commit tag를 구성하여 진행했습니다.
+- 단 최대한 쪼개서 진행했으며, 메시지만으로 무엇을 한 건지 명시적으로 알 수 있도록 작성했습니다.  
 
+<br>
+
+### 화면 layout 과 styling  
+
+- 첨부된 와이어프레임과 레이아웃이 최대한 동일하게 했습니다. 폰트 종류, size 차이는 존재할 수 있습니다.
+
+<br>
+
+### Model 설계 방향성
+
+- 하나의 모델만 만들어서 다양한 속성들을 담을 수도 있지만 그런 경우 테이블 자체가 너무 커지고, 비어있는 데이터가 많아집니다.  
+
+- 그래서 User model -> Employee model -> Resignation model 로 실 사용 시 흐름을 따라 모델을 설계했습니다.
+
+<br>
+
+### 프로젝트 app 구조  
+
+- config: 프로젝트 설정이 담겨있는 directory
+- accounts: 프로젝트 요구사항이 들어있는 directory
+- DDD 같은 구조가 아닌 Django의 MTV 패턴에 맞게 프로젝트 구조를 구성했습니다.  
