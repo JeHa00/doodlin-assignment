@@ -80,7 +80,7 @@ class LoginView(FormView):
 
     def form_valid(self, form):
         email = form.data.get("email")
-        user = User.objects.get(email=email)
+        user = User.objects.filter(email=email).last()
 
         user.update_last_login()
         login(self.request, user)
