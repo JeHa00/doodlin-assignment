@@ -124,7 +124,7 @@ class SignupListView(ListView):
 @method_decorator(login_required(login_url=reverse_lazy("login")), name="get")
 @method_decorator(authorization_filter_on_employee_list, name="get")
 class EmployeeListView(ListView):
-    queryset = Employee.objects.select_related("user")
+    queryset = None
     template_name = "list.html"
     ordering = ["-id"]
     paginate_by = COUNTS_PER_PAGE
@@ -147,12 +147,18 @@ class EmployeeListView(ListView):
             queryset = Employee.objects.select_related("user")
         else:
             queryset = Employee.objects.select_related("user").exclude(is_resigned=True)
-        return queryset
+        self.queryset = queryset
+        return super().get_queryset()
 
 
 @login_required(login_url=reverse_lazy("login"))
 def signup_user_detail_view(request, user_id):
-    def get_context_data(user_form, employee_form):
+    user = get_object_or_404(User, pk=user_id)
+
+    def get_context_data(
+        user_form=UserForm(instance=user),
+        employee_form=EmployeeForm(),
+    ):
         context = {
             "user_form": user_form,
             "employee_form": employee_form,
@@ -160,13 +166,11 @@ def signup_user_detail_view(request, user_id):
         }
         return context
 
-    user = get_object_or_404(User, pk=user_id)
-
     if request.method == "POST":
         user_form = UserForm(request.POST, instance=user)
 
         if user_form.is_valid():
-            if "refusal-btn" in request.POST:  # 가입 신청 거절 시 진입
+            if "refusal-btn" in request.POST:  # 가입 신청 거절 성공 시
                 # User 거절 관련 정보 업데이트
                 reason_for_refusal = user_form.cleaned_data.get("reason_for_refusal")
                 rejected_at = timezone.now()
@@ -177,12 +181,12 @@ def signup_user_detail_view(request, user_id):
                 fields_to_be_updated = ["state", "reason_for_refusal", "rejected_at"]
                 user.save(update_fields=fields_to_be_updated)
 
-                return redirect("signup_list")
-            else:  # 가입 신청 승인 시 진입
+                context = get_context_data(user_form=user_form)
+                return render(request, "detail.html", context)
+            else:  # 가입 신청 시
                 employee_form = EmployeeForm(request.POST)
 
-                # Employee 객체 생성
-                if employee_form.is_valid():
+                if employee_form.is_valid():  # 가입 신청 승인 성공으로 Employee 객체 생성 시
                     cleaned_data = employee_form.cleaned_data
                     grade = employee_form.data.get("grade")
 
@@ -208,45 +212,47 @@ def signup_user_detail_view(request, user_id):
                     employee.save()
 
                     user.state = "AP"
-                    user.save(update_fields=["state"])
-
                     return redirect("signup_list")
-                else:
-                    user_form = UserForm(instance=user)
-                    context = get_context_data(user_form, employee_form)
+                else:  # 등급을 선택하지 않고 승인 버튼을 눌렀을 경우
+                    context = get_context_data()
                     return render(request, "detail.html", context)
-        else:
-            employee_form = EmployeeForm()
-            context = get_context_data(user_form, employee_form)
+        else:  # 거절 사유를 입력하지 않고 거절 버튼을 눌렀을 경우
+            context = get_context_data()
             return render(request, "detail.html", context)
 
-    else:
-        user_form = UserForm(instance=user)
-        employee_form = EmployeeForm()
-        context = get_context_data(user_form, employee_form)
+    else:  # GET method일 때
+        context = get_context_data()
         return render(request, "detail.html", context)
 
 
 @login_required(login_url=reverse_lazy("login"))
 def employee_detail_view(request, employee_id):
-    def get_context_data(user_form, employee_form, resignation_form):
+    employee = get_object_or_404(Employee, pk=employee_id)
+    user = get_object_or_404(User, pk=employee.user_id)
+
+    def get_context_data(
+        user_form=UserForm(instance=user),
+        employee_form=EmployeeForm(instance=employee),
+        resignation_form=ResignationForm(),
+    ):
         context = {
             "user_form": user_form,
             "employee_form": employee_form,
             "resignation_form": resignation_form,
             "signup_list": False,
+            "approval_authorization": True,
+            "read_authorization": True,
         }
         return context
 
-    employee = get_object_or_404(Employee, pk=employee_id)
-    user = get_object_or_404(User, pk=employee.user_id)
     if request.method == "POST":
         user_form = UserForm(request.POST, instance=user)
         employee_form = EmployeeForm(request.POST, instance=employee)
         resignation_form = ResignationForm(request.POST)
 
-        if "resignation-btn" in request.POST:
+        if "resignation-btn" in request.POST:  # 퇴사처리 시도 의미
             if resignation_form.is_valid():
+                # 퇴사자 정보 생성
                 cleaned_data = resignation_form.cleaned_data
                 reason_for_resignation = cleaned_data.get("reason_for_resignation")
                 resigned_at = timezone.now()
@@ -261,9 +267,15 @@ def employee_detail_view(request, employee_id):
                 employee.is_resigned = True
                 employee.save(update_fields=["is_resigned"])
 
-                context = get_context_data(user_form, employee_form, resignation_form)
-                return redirect("employee_detail", employee_id)
-            return redirect("employee_detail", employee_id)
+                context = get_context_data(
+                    user_form=user_form,
+                    employee_form=employee_form,
+                    resignation_form=resignation_form,
+                )
+                return render(request, "detail.html", context)
+
+            context = get_context_data()
+            return render(request, "detail.html", context)
         # 퇴사 처리 이외 정보 변경 시도 의미
         else:
             if user_form.is_valid() and employee_form.is_valid():
@@ -275,7 +287,6 @@ def employee_detail_view(request, employee_id):
                 phone = user_cleaned_data.get("phone")
                 user.name = name
                 user.phone = phone
-                user.save(update_fields=["name", "phone"])
 
                 # 수정될 employee 정보
                 grade = employee_cleaned_data.get("grade")
@@ -308,6 +319,8 @@ def employee_detail_view(request, employee_id):
                 employee.resign_authorization = authorizations.get(
                     "resign_authorization"
                 )
+
+                user.save(update_fields=["name", "phone"])
                 employee.save(
                     update_fields=[
                         "authorization_grade",
@@ -318,16 +331,18 @@ def employee_detail_view(request, employee_id):
                     ]
                 )
 
-                context = get_context_data(user_form, employee_form, resignation_form)
-                return redirect("employee_detail", employee_id)
+                context = get_context_data(
+                    user_form=user_form,
+                    employee_form=employee_form,
+                    resignation_form=resignation_form,
+                )
+                return render(request, "detail.html", context)
     else:
-        user_form = UserForm(instance=user)
-        employee_form = EmployeeForm(instance=employee)
         try:
             resignation = Resignation.objects.get(resigned_user_id=employee.id)
             resignation_form = ResignationForm(instance=resignation)
         except ObjectDoesNotExist:
             resignation_form = ResignationForm()
 
-        context = get_context_data(user_form, employee_form, resignation_form)
+        context = get_context_data(resignation_form=resignation_form)
         return render(request, "detail.html", context)
