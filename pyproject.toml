@@ -14,10 +14,8 @@ django = "^4.2.3"
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
 django-debug-toolbar = "^4.1.0"
+pre-commit = "^3.3.3"
 
-
-[tool.poetry.group.test.dependencies]
-pytest = "^7.4.0"
 
 [build-system]
 requires = ["poetry-core"]
