@@ -68,6 +68,7 @@ class Employee(models.Model):
         verbose_name="등급",
         max_length=2,
         choices=AuthorizationGradeChoices.choices,
+        null=True,
     )
     signup_approval_authorization = models.BooleanField(
         verbose_name="가입 승인 권한", default=False
