@@ -12,6 +12,8 @@ from config.settings.base import COUNTS_PER_PAGE
 from accounts.utils import (
     authorization_filter_on_employee_list,
     authorization_filter_on_signup_list,
+    CheckAuthAndAddError,
+    get_authorizations,
 )
 from accounts.forms import (
     ResignationForm,
@@ -153,10 +155,12 @@ class EmployeeListView(ListView):
 
 @login_required(login_url=reverse_lazy("login"))
 def signup_user_detail_view(request, user_id):
-    user = get_object_or_404(User, pk=user_id)
+    target_user = get_object_or_404(User, pk=user_id)
+    current_employee = Employee.objects.filter(user_id=request.user.id).last()
+    compare_auth_and_add_error = CheckAuthAndAddError(request.user.id, user_id)
 
     def get_context_data(
-        user_form=UserForm(instance=user),
+        user_form=UserForm(instance=target_user),
         employee_form=EmployeeForm(),
     ):
         context = {
@@ -167,57 +171,59 @@ def signup_user_detail_view(request, user_id):
         return context
 
     if request.method == "POST":
-        user_form = UserForm(request.POST, instance=user)
+        user_form = UserForm(request.POST, instance=target_user)
 
         if user_form.is_valid():
             if "refusal-btn" in request.POST:  # 가입 신청 거절 성공 시
+                compare_auth_and_add_error.check_to_do_refusal(user_form)
                 # User 거절 관련 정보 업데이트
                 reason_for_refusal = user_form.cleaned_data.get("reason_for_refusal")
                 rejected_at = timezone.now()
-                user.reason_for_refusal = reason_for_refusal
-                user.rejected_at = rejected_at
-                user.state = "RJ"
+                target_user.reason_for_refusal = reason_for_refusal
+                target_user.rejected_at = rejected_at
+                target_user.state = "RJ"
 
-                fields_to_be_updated = ["state", "reason_for_refusal", "rejected_at"]
-                user.save(update_fields=fields_to_be_updated)
+                fields_to_be_updated = [
+                    "state",
+                    "reason_for_refusal",
+                    "rejected_at",
+                ]
+                target_user.save(update_fields=fields_to_be_updated)
 
                 context = get_context_data(user_form=user_form)
                 return render(request, "detail.html", context)
-            else:  # 가입 신청 시
+
+            else:  # 가입 신청 승인 시
                 employee_form = EmployeeForm(request.POST)
 
                 if employee_form.is_valid():  # 가입 신청 승인 성공으로 Employee 객체 생성 시
-                    cleaned_data = employee_form.cleaned_data
-                    grade = employee_form.data.get("grade")
+                    if (
+                        current_employee.authorization_grade == "MS"
+                    ):  # 가입 신청 승인을 master가 했을 경우
+                        authorizations = get_authorizations(
+                            "MS",
+                            employee_form.cleaned_data,
+                        )
 
-                    authorizations = {
-                        "authorization_grade": grade,
-                        "signup_approval_authorization": cleaned_data.get(
-                            "signup_approval_authorization"
-                        ),
-                        "list_read_authorization": cleaned_data.get(
-                            "list_read_authorization"
-                        ),
-                        "update_authorization": cleaned_data.get(
-                            "update_authorization"
-                        ),
-                        "resign_authorization": cleaned_data.get(
-                            "resign_authorization"
-                        ),
-                    }
+                        employee = Employee.objects.create(
+                            user_id=target_user.id,
+                            **authorizations,
+                        )
 
-                    employee = Employee.objects.create(
-                        user_id=user.id, **authorizations
-                    )
+                    # 가입 신청 승인을 관리자 등급이 했을 경우
+                    elif current_employee.authorization_grade == "MA":
+                        employee = Employee.objects.create(user_id=target_user.id)
+
+                    target_user.state = "AP"
+                    target_user.save(update_fields=["state"])
                     employee.save()
 
-                    user.state = "AP"
                     return redirect("signup_list")
                 else:  # 등급을 선택하지 않고 승인 버튼을 눌렀을 경우
                     context = get_context_data()
                     return render(request, "detail.html", context)
         else:  # 거절 사유를 입력하지 않고 거절 버튼을 눌렀을 경우
-            context = get_context_data()
+            context = get_context_data(user_form=user_form)
             return render(request, "detail.html", context)
 
     else:  # GET method일 때
@@ -227,12 +233,15 @@ def signup_user_detail_view(request, user_id):
 
 @login_required(login_url=reverse_lazy("login"))
 def employee_detail_view(request, employee_id):
-    employee = get_object_or_404(Employee, pk=employee_id)
-    user = get_object_or_404(User, pk=employee.user_id)
+    target_employee = get_object_or_404(Employee, pk=employee_id)
+    target_user = get_object_or_404(User, pk=target_employee.user_id)
+    current_employee = get_object_or_404(Employee, user_id=request.user.id)
+
+    compare_auth_and_add_error = CheckAuthAndAddError(request.user.id, target_user.id)
 
     def get_context_data(
-        user_form=UserForm(instance=user),
-        employee_form=EmployeeForm(instance=employee),
+        user_form=UserForm(instance=target_user),
+        employee_form=EmployeeForm(instance=target_employee),
         resignation_form=ResignationForm(),
     ):
         context = {
@@ -246,26 +255,27 @@ def employee_detail_view(request, employee_id):
         return context
 
     if request.method == "POST":
-        user_form = UserForm(request.POST, instance=user)
-        employee_form = EmployeeForm(request.POST, instance=employee)
+        user_form = UserForm(request.POST, instance=target_user)
+        employee_form = EmployeeForm(request.POST, instance=target_employee)
         resignation_form = ResignationForm(request.POST)
 
-        if "resignation-btn" in request.POST:  # 퇴사처리 시도 의미
+        if "resignation-btn" in request.POST:  # 퇴사처리 시
+            compare_auth_and_add_error.check_to_do_resignation(resignation_form)
             if resignation_form.is_valid():
                 # 퇴사자 정보 생성
                 cleaned_data = resignation_form.cleaned_data
                 reason_for_resignation = cleaned_data.get("reason_for_resignation")
                 resigned_at = timezone.now()
                 resignation = Resignation.objects.create(
-                    resigned_user=employee,
+                    resigned_user=target_employee,
                     reason_for_resignation=reason_for_resignation,
                     resigned_at=resigned_at,
                 )
                 resignation.save()
 
                 # 임직원 퇴사 유무 확인 정보 업데이트
-                employee.is_resigned = True
-                employee.save(update_fields=["is_resigned"])
+                target_employee.is_resigned = True
+                target_employee.save(update_fields=["is_resigned"])
 
                 context = get_context_data(
                     user_form=user_form,
@@ -274,62 +284,29 @@ def employee_detail_view(request, employee_id):
                 )
                 return render(request, "detail.html", context)
 
-            context = get_context_data()
+            context = get_context_data(resignation_form=resignation_form)
             return render(request, "detail.html", context)
-        # 퇴사 처리 이외 정보 변경 시도 의미
         else:
             if user_form.is_valid() and employee_form.is_valid():
-                user_cleaned_data = user_form.cleaned_data
-                employee_cleaned_data = employee_form.cleaned_data
-
-                # 수정될 user 정보
-                name = user_cleaned_data.get("name")
-                phone = user_cleaned_data.get("phone")
-                user.name = name
-                user.phone = phone
-
-                # 수정될 employee 정보
-                grade = employee_cleaned_data.get("grade")
-                authorizations = {
-                    "authorization_grade": grade,
-                    "signup_approval_authorization": employee_cleaned_data.get(
-                        "signup_approval_authorization"
-                    ),
-                    "list_read_authorization": employee_cleaned_data.get(
-                        "list_read_authorization"
-                    ),
-                    "update_authorization": employee_cleaned_data.get(
-                        "update_authorization"
-                    ),
-                    "resign_authorization": employee_cleaned_data.get(
-                        "resign_authorization"
-                    ),
-                }
-
-                employee.authorization_grade = grade
-                employee.signup_approval_authorization = authorizations.get(
-                    "signup_approval_authorization"
-                )
-                employee.list_read_authorization = authorizations.get(
-                    "list_read_authorization"
-                )
-                employee.update_authorization = authorizations.get(
-                    "update_authorization"
-                )
-                employee.resign_authorization = authorizations.get(
-                    "resign_authorization"
+                update_fields = []
+                compare_auth_and_add_error.check_in_employee_list(
+                    employee_form, user_form, "name", "phone"
                 )
 
-                user.save(update_fields=["name", "phone"])
-                employee.save(
-                    update_fields=[
-                        "authorization_grade",
-                        "signup_approval_authorization",
-                        "list_read_authorization",
-                        "update_authorization",
-                        "resign_authorization",
-                    ]
-                )
+                for key, value in employee_form.cleaned_data.items():
+                    if not value:
+                        continue
+                    update_fields.append(key)
+
+                target_employee.save(update_fields=update_fields)
+                update_fields.clear()
+
+                for key, value in user_form.cleaned_data.items():
+                    if not value:
+                        continue
+                    update_fields.append(key)
+
+                target_user.save(update_fields=update_fields)
 
                 context = get_context_data(
                     user_form=user_form,
@@ -337,9 +314,15 @@ def employee_detail_view(request, employee_id):
                     resignation_form=resignation_form,
                 )
                 return render(request, "detail.html", context)
+            context = get_context_data(
+                user_form=user_form,
+                employee_form=employee_form,
+                resignation_form=resignation_form,
+            )
+            return render(request, "detail.html", context)
     else:
         try:
-            resignation = Resignation.objects.get(resigned_user_id=employee.id)
+            resignation = Resignation.objects.get(resigned_user_id=target_employee.id)
             resignation_form = ResignationForm(instance=resignation)
         except ObjectDoesNotExist:
             resignation_form = ResignationForm()
