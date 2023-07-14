@@ -19,7 +19,7 @@ class User(AbstractUser, BaseModel):
         REJECTED = "RJ", "거절"
 
     email = models.EmailField(verbose_name="이메일", unique=True)
-    name = models.CharField(max_length=50)
+    name = models.CharField(verbose_name="이름", max_length=50)
     phone = models.CharField(
         verbose_name="연락처",
         max_length=11,
