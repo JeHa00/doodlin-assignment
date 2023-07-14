@@ -115,7 +115,7 @@ class UserForm(forms.ModelForm):
     email = forms.CharField(
         label="이메일",
         required=False,
-        widget=forms.TextInput(attrs={"disabled": "disabled"}),
+        widget=forms.TextInput(attrs={"readonly": "readonly"}),
     )
     phone = forms.CharField(label="전화번호")
     reason_for_refusal = forms.CharField(
@@ -140,14 +140,16 @@ class UserForm(forms.ModelForm):
     def clean_reason_for_refusal(self):
         if "refusal-btn" in self.data:
             reason_for_refusal = self.cleaned_data.get("reason_for_refusal")
-            if not reason_for_refusal:
+            if self.errors:
+                return reason_for_refusal
+            elif not reason_for_refusal:
                 raise ValidationError("거절 사유를 입력해야 거절할 수 있습니다.")
             return reason_for_refusal
 
 
 class EmployeeForm(forms.ModelForm):
     authorization_choices = [("", ""), ("MA", "관리자"), ("ST", "일반")]
-    grade = forms.ChoiceField(
+    authorization_grade = forms.ChoiceField(
         label="등급",
         choices=authorization_choices,
         initial={"authorization_choices": ""},
@@ -157,7 +159,7 @@ class EmployeeForm(forms.ModelForm):
     class Meta:
         model = Employee
         fields = [
-            "grade",
+            "authorization_grade",
             "signup_approval_authorization",
             "list_read_authorization",
             "update_authorization",
@@ -165,12 +167,6 @@ class EmployeeForm(forms.ModelForm):
             "is_resigned",
         ]
 
-    def clean_grade(self):
-        if "approval-btn" in self.data:
-            grade = self.cleaned_data.get("grade")
-            if not grade:
-                raise ValidationError("승인 시에는 반드시 등급을 선택해야 합니다.")
-        return grade
 
 
 class ResignationForm(forms.ModelForm):
@@ -195,20 +191,23 @@ class ResignationForm(forms.ModelForm):
         if "resignation-btn" in self.data:
             reason_for_resignation = self.cleaned_data.get("reason_for_resignation")
             if not reason_for_resignation:
-                raise ValidationError("퇴사 사유를 입력해야 퇴사 상태로 바꿀 수 있습니다.")
+                raise ValidationError("퇴사 사유를 입력해야 탈퇴시킬 수 있습니다.")
             return reason_for_resignation
 
     def clean(self):
-        cleaned_data = super(ResignationForm, self).clean()
-        user = User.objects.filter(
-            name=self.data.get("name"), phone=self.data.get("phone")
-        ).last()
-        employee = Employee.objects.get(user_id=user.id)
-        if not employee.resign_authorization:
-            raise ValidationError({"reason_for_resignation": "탈퇴 시킬 권한이 없습니다."})
+        if "resignation-btn" in self.data:
+            cleaned_data = super(ResignationForm, self).clean()
 
-        resigned_user = Employee.objects.filter(id=employee.resigned_user.id).last()
-        if resigned_user:
-            raise ValidationError({"reason_for_resignation": "이미 탈퇴된 유저입니다."})
+            user = User.objects.filter(
+                name=self.data.get("name"), phone=self.data.get("phone")
+            ).last()
 
-        return cleaned_data
+            employee = Employee.objects.filter(user_id=user.id).last()
+            resigned_user = Resignation.objects.filter(
+                resigned_user_id=employee.id,
+            ).last()
+
+            if resigned_user:
+                raise ValidationError({"reason_for_resignation": "이미 탈퇴된 유저입니다."})
+
+            return cleaned_data
