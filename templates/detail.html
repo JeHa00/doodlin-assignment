@@ -23,7 +23,13 @@
                 <tr>
                     <td class="email">{{user_form.email}}</td>
                     <td class="name">{{user_form.name}}</td>
+                    <div class="form-item-error" id="errors_name">
+                        {{ user_form.name.errors }}
+                    </div>
                     <td class="phone">{{user_form.phone}}</td>
+                    <div class="form-item-error" id="errors_phone">
+                        {{ user_form.phone.errors }}
+                    </div>
                     {% if signup_list %}
                     <td class="state">
                         {% if user_form.state.value == "AW" %}
@@ -42,15 +48,32 @@
                     </td>
                     {% endif %}
                     <td class="grade">
-                        {{employee_form.grade}}
+                        {{employee_form.authorization_grade}}
                     </td>
-                    <div class="form-item-error" id="errors_grade">
-                        {{ employee_form.grade.errors }}
+                    <div class="form-item-error" id="authorization_grade">
+                        {{ employee_form.authorization_grade.errors }}
                     </div>
                 </tr>
             </tbody>
         </table>
         <table class="authorization-table">
+            {% if employee_form.signup_approval_authorization.errors %}
+            <div class="form-item-error" id="signup_approval_authorization">
+                {{ employee_form.signup_approval_authorization.errors }}
+            </div>
+            {% elif employee_form.list_read_authorization.errors %}
+            <div class="form-item-error" id="list_read_authorization">
+                {{ employee_form.list_read_authorization.errors }}
+            </div>
+            {% elif employee_form.update_authorization.errors %}
+            <div class="form-item-error" id="update_authorization">
+                {{ employee_form.update_authorization.errors }}
+            </div>
+            {% elif employee_form.resign_authorization.errors %}
+            <div class="form-item-error" id="resign_authorization">
+                {{ employee_form.resign_authorization.errors }}
+            </div>
+            {% endif %}
             <tr>
                 <td>권한명</td>
                 <td></td>

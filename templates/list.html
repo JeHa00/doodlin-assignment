@@ -57,7 +57,13 @@
                 <td class="id">{{employee.user.id}}</td>
                 <td class="email">{{employee.user.email}}</td>
                 <td class="name">{{employee.user.name}}</td>
-                <td class="grade">{{employee.get_authorization_grade_display}}</td>
+                <td class="grade">
+                    {% if employee.authorization_grade is None %}
+                    -
+                    {% else %}
+                    {{employee.get_authorization_grade_display}}
+                    {% endif %}
+                </td>
                 <td class="created_at">{{employee.user.created_at|date:"Y-m-d H:i"}}</td>
                 <td class="last_login">{{employee.user.last_login|date:"Y-m-d H:i"}}</td>
                 <td class="detail">
