@@ -11,7 +11,7 @@ urlpatterns = [
     path("accounts/signup-list/", views.SignupListView.as_view(), name="signup_list"),
     path(
         "accounts/signup-list/<int:user_id>",
-        views.signup_user_detail_view,
+        views.SignupDetailView.as_view(),
         name="signup_detail",
     ),
     path("employees/", views.EmployeeListView.as_view(), name="employee_list"),

@@ -1,15 +1,17 @@
 from typing import Any
+from django import http
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.decorators import method_decorator
+from django.http import HttpRequest, HttpResponse
 from django.views.generic import FormView, ListView
 from django.contrib.auth import login, logout
+from django.views.generic.base import View
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.db.models import Q
-from django.http import HttpRequest
 
 from config.settings.base import COUNTS_PER_PAGE
 from accounts.utils import (
@@ -187,104 +189,6 @@ class EmployeeListView(ListView):
 
 
 @login_required(login_url=reverse_lazy("login"))
-def signup_user_detail_view(
-    request: HttpRequest,
-    user_id: int,
-) -> Any:
-    """
-    해당 detail view에는 UserForm과 EmployeeForm 모두를 사용하고 있다.
-    회원 가입 승인 거절인 경우 UserForm을 사용하고, 단순한 가입신청 승인일 경우 두 form 모두 필요.
-
-    - "refusal-btn" 과 "approval-btn"은 detail.html의 button tag의 name을 의미
-
-    Args:
-        request (HttpRequest): request 요청
-        user_id (int): 상세화면으로 조회할 target user의 id
-
-    """
-    target_user = get_object_or_404(User, pk=user_id)
-    current_employee = Employee.objects.filter(user_id=request.user.id).last()
-    compare_auth_and_add_error = CheckAuthAndAddError(request.user.id, user_id)
-
-    def get_context_data(
-        user_form=UserForm(instance=target_user),
-        employee_form=EmployeeForm(),
-    ):
-        """
-        계속해서 사용하는 context 형태를 반복 입력하는 걸 방지하고자 만든 함수
-        """
-        context = {
-            "user_form": user_form,
-            "employee_form": employee_form,
-            "signup_list": True,
-        }
-        return context
-
-    if request.method == "POST":
-        user_form = UserForm(request.POST, instance=target_user)
-
-        if user_form.is_valid():
-            if "refusal-btn" in request.POST:  # 가입 신청 거절 성공 시
-                compare_auth_and_add_error.check_to_do_refusal(user_form)
-
-                # User 거절 관련 정보 업데이트
-                reason_for_refusal = user_form.cleaned_data.get("reason_for_refusal")
-                rejected_at = timezone.now()
-                target_user.reason_for_refusal = reason_for_refusal
-                target_user.rejected_at = rejected_at
-                target_user.state = "RJ"
-
-                fields_to_be_updated = [
-                    "state",
-                    "reason_for_refusal",
-                    "rejected_at",
-                ]
-                target_user.save(update_fields=fields_to_be_updated)
-
-                context = get_context_data(user_form=user_form)
-                return render(request, "detail.html", context)
-
-            else:  # 가입 신청 승인 시
-                employee_form = EmployeeForm(request.POST)
-
-                if employee_form.is_valid():  # 가입 신청 승인 성공으로 Employee 객체 생성 시
-                    if (
-                        current_employee.authorization_grade == "MS"
-                    ):  # 가입 신청 승인을 master가 했을 경우
-                        authorizations = get_authorizations(
-                            "MS",
-                            employee_form.cleaned_data,
-                        )
-
-                        employee = Employee.objects.create(
-                            user_id=target_user.id,
-                            **authorizations,
-                        )
-
-                    # 가입 신청 승인을 관리자 등급이 했을 경우
-                    elif current_employee.authorization_grade == "MA":
-                        employee = Employee.objects.create(user_id=target_user.id)
-
-                    target_user.state = "AP"
-                    target_user.save(update_fields=["state"])
-                    employee.save()
-
-                    return redirect("signup_list")
-
-                else:  # 등급을 선택하지 않고 승인 버튼을 눌렀을 경우
-                    context = get_context_data()
-                    return render(request, "detail.html", context)
-
-        else:  # 거절 사유를 입력하지 않고 거절 버튼을 눌렀을 경우
-            context = get_context_data(user_form=user_form)
-            return render(request, "detail.html", context)
-
-    else:  # GET method일 때
-        context = get_context_data()
-        return render(request, "detail.html", context)
-
-
-@login_required(login_url=reverse_lazy("login"))
 def employee_detail_view(
     request: HttpRequest,
     employee_id: int,
@@ -330,7 +234,6 @@ def employee_detail_view(
         user_form = UserForm(request.POST, instance=target_user)
         employee_form = EmployeeForm(request.POST, instance=target_employee)
         resignation_form = ResignationForm(request.POST)
-
         if "resignation-btn" in request.POST:  # 퇴사처리 시
             compare_auth_and_add_error.check_to_do_resignation(resignation_form)
             if resignation_form.is_valid():
@@ -411,3 +314,126 @@ def employee_detail_view(
 
         context = get_context_data(resignation_form=resignation_form)
         return render(request, "detail.html", context)
+
+
+@method_decorator(login_required(login_url=reverse_lazy("login")), name="get")
+class SetFormView(View):
+    user_form = None
+    employee_form = None
+    resignation_form = None
+    target_user = None
+    compare_auth_and_add_error = None
+
+    def set_employee_form(self, request, instance):
+        self.employee_form = EmployeeForm(
+            request,
+            instance=instance,
+        )
+        return self.employee_form
+
+    def set_user_form(self, request, instance):
+        self.user_form = UserForm(
+            request,
+            instance=instance,
+        )
+        return self.user_form
+
+    def set_resignation_form(self, request, instance):
+        self.user_form = ResignationForm(
+            request,
+            instance=instance,
+        )
+        return self.resignation_form
+
+
+class SignupDetailView(SetFormView):
+    current_employee = None
+
+    """
+    해당 detail view에는 UserForm과 EmployeeForm 모두를 사용하고 있다.
+    회원 가입 승인 거절인 경우 UserForm을 사용하고, 단순한 가입신청 승인일 경우 두 form 모두 필요.
+
+    - "refusal-btn" 과 "approval-btn"은 detail.html의 button tag의 name을 의미
+
+    Args:
+        request (HttpRequest): request 요청
+        user_id (int): 상세화면으로 조회할 target user의 id
+
+    """
+
+    def dispatch(
+        self, request: HttpRequest, user_id, *args: Any, **kwargs: Any
+    ) -> HttpResponse:
+        self.current_employee = Employee.objects.filter(user_id=request.user.id).last()
+        self.target_user = User.objects.filter(pk=user_id).last()
+        self.set_user_form(None, self.target_user)
+        self.set_employee_form(None, None)
+        return super().dispatch(request, user_id, *args, **kwargs)
+
+    def get_context_data(self):
+        context = {
+            "user_form": self.user_form,
+            "employee_form": self.employee_form,
+            "signup_list": True,
+        }
+
+        return context
+
+    def get(self, request: HttpRequest, user_id: int):
+        context = self.get_context_data()
+        return render(request, "detail.html", context)
+
+    def update_when_refusal_btn(self):
+        self.compare_auth_and_add_error.check_to_do_refusal(self.user_form)
+
+        reason_for_refusal = self.user_form.cleaned_data.get("reason_for_refusal")
+        self.target_user.reason_for_refusal = reason_for_refusal
+        self.target_user.rejected_at = timezone.now()
+        self.target_user.state = "RJ"
+
+        self.target_user.save(
+            update_fields=["state", "reason_for_refusal", "rejected_at"]
+        )
+
+        return True
+
+    def update_when_approval_btn(self):
+        # 가입 신청 승인을 master가 했을 경우
+        if self.current_employee.authorization_grade == "MS":
+            authorizations = get_authorizations(
+                "MS",
+                self.employee_form.cleaned_data,
+            )
+
+            employee = Employee.objects.create(
+                user_id=self.target_user.id,
+                **authorizations,
+            )
+
+        # 가입 신청 승인을 관리자 등급이 했을 경우
+        elif self.current_employee.authorization_grade == "MA":
+            employee = Employee.objects.create(user_id=self.target_user.id)
+
+        self.target_user.state = "AP"
+        self.target_user.save(update_fields=["state"])
+        employee.save()
+
+        return True
+
+    def post(self, request, user_id):
+        self.set_user_form(request.POST, self.target_user)
+        if self.user_form.is_valid():
+            if "refusal-btn" in request.POST:  # 가입 신청 거절 시
+                self.update_when_refusal_btn(self)
+                return render(request, "detail.html", context)
+            else:  # 가입 신청 승인 시
+                self.set_employee_form(request.POST, None)
+                if self.employee_form.is_valid():
+                    self.update_when_approval_btn()
+                    return redirect("signup_list")
+                else:  # 등급을 선택하지 않고 승인 버튼을 눌렀을 경우
+                    return render(request, "detail.html", context)
+
+        else:  # 거절 사유를 입력하지 않고 거절 버튼을 눌렀을 경우
+            context = self.get_context_data()
+            return render(request, "detail.html", context)

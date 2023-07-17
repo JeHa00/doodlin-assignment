@@ -10,13 +10,16 @@ from accounts.models import User, Employee, Resignation
 
 class SignUpForm(forms.Form):
     email = forms.EmailField(
-        label="이메일", widget=forms.EmailInput(attrs={"placeholder": "이메일"}),
+        label="이메일",
+        widget=forms.EmailInput(attrs={"placeholder": "이메일"}),
     )
     name = forms.CharField(
-        label="이름", widget=forms.TextInput(attrs={"placeholder": "이름"}),
+        label="이름",
+        widget=forms.TextInput(attrs={"placeholder": "이름"}),
     )
     phone = forms.CharField(
-        label="연락처", widget=forms.TextInput(attrs={"placeholder": "01012345678"}),
+        label="연락처",
+        widget=forms.TextInput(attrs={"placeholder": "01012345678"}),
     )
     password = forms.CharField(
         label="비밀번호",
@@ -274,7 +277,8 @@ class ResignationForm(forms.ModelForm):
             cleaned_data = super(ResignationForm, self).clean()
 
             user = User.objects.filter(
-                name=self.data.get("name"), phone=self.data.get("phone"),
+                name=self.data.get("name"),
+                phone=self.data.get("phone"),
             ).last()
 
             employee = Employee.objects.filter(user_id=user.id).last()

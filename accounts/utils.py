@@ -92,7 +92,7 @@ class CheckAuthAndAddError:
     def __init__(self, current_user_id: int, target_user_id: int) -> None:
         self.current_employee = Employee.objects.filter(user_id=current_user_id).last()
         self.target_employee = Employee.objects.filter(user_id=target_user_id).last()
-        self.target_user = User.objects.filter(pk=self.target_employee.user_id).last()
+        self.target_user = User.objects.filter(pk=target_user_id).last() # FIXME: self.target_employee.user_id였지만 수정완료.
         self.auth_grade = self.current_employee.authorization_grade
         self.update_auth = self.current_employee.update_authorization
 
