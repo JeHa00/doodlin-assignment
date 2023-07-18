@@ -188,140 +188,12 @@ class EmployeeListView(ListView):
         return super().get_queryset()
 
 
-@login_required(login_url=reverse_lazy("login"))
-def employee_detail_view(
-    request: HttpRequest,
-    employee_id: int,
-) -> Any:
-    """
-    해당 detail view에는 UserForm, EmployeeForm 그리고 ResignationForm 모두를 사용하고 있다.
-    - 퇴사인 경우 EmployeeForm과 Resignation을 사용한다.
-    - 그 외 정보 업데이트 경우, UserForm, EmployeeForm을 사용한다.
-
-
-    - "resignation-btn" 과 "update-btn"은 detail.html의 button tag의 name을 의미
-
-
-    Args:
-        request (HttpRequest): request 요청
-        user_id (int): 상세화면으로 조회할 target user의 id
-
-    """
-    target_employee = get_object_or_404(Employee, pk=employee_id)
-    target_user = get_object_or_404(User, pk=target_employee.user_id)
-
-    compare_auth_and_add_error = CheckAuthAndAddError(request.user.id, target_user.id)
-
-    def get_context_data(
-        user_form=UserForm(instance=target_user),
-        employee_form=EmployeeForm(instance=target_employee),
-        resignation_form=ResignationForm(),
-    ):
-        """
-        계속해서 사용하는 context 형태를 반복 입력하는 걸 방지하고자 만든 함수
-        """
-        context = {
-            "user_form": user_form,
-            "employee_form": employee_form,
-            "resignation_form": resignation_form,
-            "signup_list": False,
-            "approval_authorization": True,
-            "read_authorization": True,
-        }
-        return context
-
-    if request.method == "POST":
-        user_form = UserForm(request.POST, instance=target_user)
-        employee_form = EmployeeForm(request.POST, instance=target_employee)
-        resignation_form = ResignationForm(request.POST)
-        if "resignation-btn" in request.POST:  # 퇴사처리 시
-            compare_auth_and_add_error.check_to_do_resignation(resignation_form)
-            if resignation_form.is_valid():
-                # 퇴사자 정보 생성
-                cleaned_data = resignation_form.cleaned_data
-                reason_for_resignation = cleaned_data.get("reason_for_resignation")
-                resigned_at = timezone.now()
-                resignation = Resignation.objects.create(
-                    resigned_user=target_employee,
-                    reason_for_resignation=reason_for_resignation,
-                    resigned_at=resigned_at,
-                )
-                resignation.save()
-
-                # 임직원 퇴사 유무 확인 정보 업데이트
-                target_employee.is_resigned = True
-                target_employee.save(update_fields=["is_resigned"])
-
-                context = get_context_data(
-                    user_form=user_form,
-                    employee_form=employee_form,
-                    resignation_form=resignation_form,
-                )
-                return render(request, "detail.html", context)
-
-            context = get_context_data(resignation_form=resignation_form)
-            return render(request, "detail.html", context)
-
-        else:  # 퇴사 처리 외 정보들 변경 시
-            if user_form.is_valid() and employee_form.is_valid():
-                update_fields = []
-
-                # 권한 비교 및 유효성 추가 검증 확인
-                compare_auth_and_add_error.check_in_employee_list(
-                    employee_form,
-                    user_form,
-                    "name",
-                    "phone",
-                )
-
-                # 권한에 따른 대상 employee_form에서 저장할 데이터 선별
-                for key, value in employee_form.cleaned_data.items():
-                    if not value:
-                        continue
-                    update_fields.append(key)
-
-                target_employee.save(update_fields=update_fields)
-                update_fields.clear()
-
-                # 권한에 따른 대상 user_form에서 저장할 데이터 선별
-                for key, value in user_form.cleaned_data.items():
-                    if not value:
-                        continue
-                    update_fields.append(key)
-
-                target_user.save(update_fields=update_fields)
-
-                context = get_context_data(
-                    user_form=user_form,
-                    employee_form=employee_form,
-                    resignation_form=resignation_form,
-                )
-                return render(request, "detail.html", context)
-
-            context = get_context_data(
-                user_form=user_form,
-                employee_form=employee_form,
-                resignation_form=resignation_form,
-            )
-            return render(request, "detail.html", context)
-
-    else:  # get 요청
-        try:
-            resignation = Resignation.objects.get(resigned_user_id=target_employee.id)
-            resignation_form = ResignationForm(instance=resignation)
-        except ObjectDoesNotExist:
-            resignation_form = ResignationForm()
-
-        context = get_context_data(resignation_form=resignation_form)
-        return render(request, "detail.html", context)
-
-
-@method_decorator(login_required(login_url=reverse_lazy("login")), name="get")
 class SetFormView(View):
     user_form = None
     employee_form = None
     resignation_form = None
     target_user = None
+    current_employee = None
     compare_auth_and_add_error = None
 
     def set_employee_form(self, request, instance):
@@ -339,16 +211,19 @@ class SetFormView(View):
         return self.user_form
 
     def set_resignation_form(self, request, instance):
-        self.user_form = ResignationForm(
+        self.resignation_form = ResignationForm(
             request,
             instance=instance,
         )
         return self.resignation_form
 
+    def set_CheckAuthAndAddError(self, current_id, target_id):
+        self.compare_auth_and_add_error = CheckAuthAndAddError(current_id, target_id)
+        return self.compare_auth_and_add_error
 
+
+@method_decorator(login_required(login_url=reverse_lazy("login")), name="dispatch")
 class SignupDetailView(SetFormView):
-    current_employee = None
-
     """
     해당 detail view에는 UserForm과 EmployeeForm 모두를 사용하고 있다.
     회원 가입 승인 거절인 경우 UserForm을 사용하고, 단순한 가입신청 승인일 경우 두 form 모두 필요.
@@ -362,12 +237,17 @@ class SignupDetailView(SetFormView):
     """
 
     def dispatch(
-        self, request: HttpRequest, user_id, *args: Any, **kwargs: Any
+        self,
+        request: HttpRequest,
+        user_id,
+        *args: Any,
+        **kwargs: Any,
     ) -> HttpResponse:
         self.current_employee = Employee.objects.filter(user_id=request.user.id).last()
         self.target_user = User.objects.filter(pk=user_id).last()
         self.set_user_form(None, self.target_user)
         self.set_employee_form(None, None)
+        self.set_CheckAuthAndAddError(request.user.id, user_id)
         return super().dispatch(request, user_id, *args, **kwargs)
 
     def get_context_data(self):
@@ -379,7 +259,11 @@ class SignupDetailView(SetFormView):
 
         return context
 
-    def get(self, request: HttpRequest, user_id: int):
+    def get(
+        self,
+        request: HttpRequest,
+        user_id: int,
+    ) -> HttpResponse:
         context = self.get_context_data()
         return render(request, "detail.html", context)
 
@@ -387,6 +271,7 @@ class SignupDetailView(SetFormView):
         self.compare_auth_and_add_error.check_to_do_refusal(self.user_form)
 
         reason_for_refusal = self.user_form.cleaned_data.get("reason_for_refusal")
+
         self.target_user.reason_for_refusal = reason_for_refusal
         self.target_user.rejected_at = timezone.now()
         self.target_user.state = "RJ"
@@ -420,7 +305,11 @@ class SignupDetailView(SetFormView):
 
         return True
 
-    def post(self, request, user_id):
+    def post(
+        self,
+        request: HttpRequest,
+        user_id: int,
+    ) -> HttpResponse:
         self.set_user_form(request.POST, self.target_user)
         if self.user_form.is_valid():
             if "refusal-btn" in request.POST:  # 가입 신청 거절 시
@@ -435,5 +324,139 @@ class SignupDetailView(SetFormView):
                     return render(request, "detail.html", context)
 
         else:  # 거절 사유를 입력하지 않고 거절 버튼을 눌렀을 경우
+            context = self.get_context_data()
+            return render(request, "detail.html", context)
+
+
+@method_decorator(login_required(login_url=reverse_lazy("login")), name="dispatch")
+class EmployeeDetailView(SetFormView):
+    """
+    해당 detail view에는 UserForm, EmployeeForm 그리고 ResignationForm 모두를 사용하고 있다.
+    - 퇴사인 경우 EmployeeForm과 Resignation을 사용한다.
+    - 그 외 정보 업데이트 경우, UserForm, EmployeeForm을 사용한다.
+
+
+    - "resignation-btn" 과 "update-btn"은 detail.html의 button tag의 name을 의미
+
+
+    Args:
+        request (HttpRequest): request 요청
+        user_id (int): 상세화면으로 조회할 target user의 id
+
+    """
+
+    target_employee = None
+
+    def dispatch(
+        self, request: HttpRequest, employee_id, *args: Any, **kwargs: Any
+    ) -> HttpResponse:
+        self.target_employee = Employee.objects.filter(pk=employee_id).last()
+        self.target_user = User.objects.filter(pk=self.target_employee.user_id).last()
+        self.compare_auth_and_add_error = CheckAuthAndAddError(
+            request.user.id, self.target_user.id
+        )
+        self.set_user_form(None, self.target_user)
+        self.set_employee_form(None, self.target_employee)
+        self.set_resignation_form(None, None)
+        self.set_CheckAuthAndAddError(request.user.id, self.target_user.id)
+        return super().dispatch(request, employee_id, *args, **kwargs)
+
+    def get_context_data(self):
+        """
+        계속해서 사용하는 context 형태를 반복 입력하는 걸 방지하고자 만든 함수
+        """
+        context = {
+            "user_form": self.user_form,
+            "employee_form": self.employee_form,
+            "resignation_form": self.resignation_form,
+            "signup_list": False,
+            "approval_authorization": True,
+            "read_authorization": True,
+        }
+        return context
+
+    def get(
+        self,
+        request: HttpRequest,
+        employee_id: int,
+    ) -> HttpResponse:
+        try:
+            resignation = Resignation.objects.filter(
+                resigned_user_id=employee_id
+            ).last()
+            self.set_resignation_form(None, resignation)
+        except ObjectDoesNotExist:
+            self.set_resignation_form(None, None)
+
+        context = self.get_context_data()
+        return render(request, "detail.html", context)
+
+    def update_when_resignation_btn(self):
+        cleaned_data = self.resignation_form.cleaned_data
+        reason_for_resignation = cleaned_data.get("reason_for_resignation")
+        resignation = Resignation.objects.create(
+            resigned_user=self.target_employee,
+            reason_for_resignation=reason_for_resignation,
+            resigned_at=timezone.now(),
+        )
+        resignation.save()
+
+        # 임직원 퇴사 유무 확인 정보 업데이트
+        self.target_employee.is_resigned = True
+        self.target_employee.save(update_fields=["is_resigned"])
+
+    def update_when_update_btn(self):
+        update_fields = []
+
+        # 권한 비교 및 유효성 추가 검증 확인
+        self.compare_auth_and_add_error.check_in_employee_list(
+            self.employee_form,
+            self.user_form,
+            "name",
+            "phone",
+        )
+
+        # 권한에 따른 대상 employee_form에서 저장할 데이터 선별
+        for key, value in self.employee_form.cleaned_data.items():
+            if not value:
+                continue
+            update_fields.append(key)
+
+        self.target_employee.save(update_fields=update_fields)
+        update_fields.clear()
+
+        # 권한에 따른 대상 user_form에서 저장할 데이터 선별
+        for key, value in self.user_form.cleaned_data.items():
+            if not value:
+                continue
+            update_fields.append(key)
+
+        self.target_user.save(update_fields=update_fields)
+
+    def post(
+        self,
+        request: HttpRequest,
+        employee_id: int,
+    ) -> HttpResponse:
+        self.set_user_form(request.POST, self.target_user)
+        self.set_employee_form(request.POST, self.target_employee)
+        self.set_resignation_form(request.POST, None)
+        if "resignation-btn" in request.POST:  # 퇴사처리 시
+            self.compare_auth_and_add_error.check_to_do_resignation(
+                self.resignation_form
+            )
+            if self.resignation_form.is_valid():
+                self.update_when_resignation_btn()
+                context = self.get_context_data()
+                return render(request, "detail.html", context)
+
+            context = self.get_context_data()
+            return render(request, "detail.html", context)
+        else:  # 퇴사 처리 외 정보들 변경 시
+            if self.user_form.is_valid() and self.employee_form.is_valid():
+                self.update_when_update_btn()
+                context = self.get_context_data()
+                return render(request, "detail.html", context)
+
             context = self.get_context_data()
             return render(request, "detail.html", context)
