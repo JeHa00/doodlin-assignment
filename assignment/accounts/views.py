@@ -66,15 +66,14 @@ class SignUpView(FormView):
     def form_valid(self, form):
         email = form.data.get("email")
         password = form.data.get("password")
-        name = form.data.get("name")
+        username = form.data.get("username")
         phone = form.data.get("phone")
 
         user = User.objects.create_user(
-            username=email,
             email=email,
             password=password,
             phone=phone,
-            name=name,
+            username=username,
         )
         user.save()
 

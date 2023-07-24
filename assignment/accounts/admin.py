@@ -5,7 +5,7 @@ from accounts.models import User, Employee, Resignation
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ["email", "name", "phone", "state"]
+    list_display = ["email", "username", "phone", "state"]
 
 
 @admin.register(Employee)
@@ -19,15 +19,15 @@ class EmployeeAdmin(admin.ModelAdmin):
 
     @admin.display(description="임직원")
     def get_user(self, obj: Employee) -> str:
-        """Employee instance이 obj의 user name을 반환한다.
+        """Employee instance이 obj의 user username을 반환한다.
 
         Args:
             obj (Employee): Employee 객체를 의미한다.
 
         Returns:
-            str: obj의 user name 속성을 반환한다.
+            str: obj의 user username 속성을 반환한다.
         """
-        return obj.user.name
+        return obj.user.username
 
 
 @admin.register(Resignation)
@@ -44,4 +44,4 @@ class ResignationAdmin(admin.ModelAdmin):
         Returns:
             str: 회원가입 승인 신청 전 모델의 이름을 반환한다.
         """
-        return obj.resigned_user.user.name
+        return obj.resigned_user.user.username

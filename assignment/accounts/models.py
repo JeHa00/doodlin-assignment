@@ -1,7 +1,35 @@
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.base_user import BaseUserManager
 from django.utils import timezone
 from django.conf import settings
 from django.db import models
+
+
+class UserManager(BaseUserManager):
+    def _create_user(self, email, password, **extra_fields):
+        if not email:
+            raise ValueError("이메일을 반드시 입력해야합니다.")
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_user(self, email, password, **extra_fields):
+        extra_fields.setdefault("is_staff", False)
+        extra_fields.setdefault("is_superuser", False)
+        return self._create_user(email, password, **extra_fields)
+
+    def create_superuser(self, email, password, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True.")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True.")
+
+        return self._create_user(email, password, **extra_fields)
 
 
 class BaseModel(models.Model):
@@ -19,7 +47,7 @@ class User(AbstractUser, BaseModel):
         REJECTED = "RJ", "거절"
 
     email = models.EmailField(verbose_name="이메일", unique=True)
-    name = models.CharField(verbose_name="이름", max_length=50)
+    username = models.CharField(verbose_name="이름", max_length=50)
     phone = models.CharField(
         verbose_name="연락처",
         max_length=11,
@@ -42,8 +70,13 @@ class User(AbstractUser, BaseModel):
         max_length=50,
     )
 
+    objects = UserManager()
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = []
+
     def __str__(self):
-        return f"{self.name} {self.state}"
+        return f"{self.username} {self.state}"
 
     class Meta:
         verbose_name = "회원가입 내역"

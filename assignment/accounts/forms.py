@@ -13,7 +13,7 @@ class SignUpForm(forms.Form):
         label="이메일",
         widget=forms.EmailInput(attrs={"placeholder": "이메일"}),
     )
-    name = forms.CharField(
+    username = forms.CharField(
         label="이름",
         widget=forms.TextInput(attrs={"placeholder": "이름"}),
     )
@@ -174,7 +174,7 @@ class UserForm(forms.ModelForm):
         model = User
         fields = [
             "email",
-            "name",
+            "username",
             "phone",
             "state",
             "rejected_at",
