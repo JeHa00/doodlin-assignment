@@ -19,7 +19,7 @@ def authorization_filter_on_signup_list(function) -> Any:
 
     def decorator_func(request):
         if request.user.state == "AP":
-            employee = Employee.objects.get(user_id=request.user.id)
+            employee = Employee.objects.filter(user_id=request.user.id).last()
             if employee.signup_approval_authorization:
                 return function(request)
             else:
@@ -44,7 +44,7 @@ def authorization_filter_on_employee_list(function) -> Any:
 
     def decorator_func(request):
         if request.user.state == "AP":
-            employee = Employee.objects.get(user_id=request.user.id)
+            employee = Employee.objects.filter(user_id=request.user.id).last()
             if employee.list_read_authorization:
                 return function(request)
             else:

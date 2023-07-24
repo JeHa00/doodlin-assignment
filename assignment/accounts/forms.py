@@ -50,7 +50,7 @@ class SignUpForm(forms.Form):
         match = "^[a-zA-Z0-9_]+@[a-zA-Z0-9_]+\.[a-zA-Z0-9.]+$"
         validation = re.compile(match)
 
-        if User.objects.filter(email=email).last():
+        if User.objects.filter(email=email).exists():
             raise ValidationError("이미 존재하는 이메일입니다.")
 
         if validation.match(str(email)) is None:
@@ -146,7 +146,7 @@ class LoginForm(forms.Form):
         password = cleaned_data.get("password")
 
         try:
-            user = User.objects.get(email=email)
+            user = User.objects.filter(email=email).last()
             if not check_password(password, user.get_password()):
                 raise ValidationError({"password": "비밀번호가 잘못되었습니다."})
         except ObjectDoesNotExist:

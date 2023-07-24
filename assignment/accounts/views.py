@@ -39,7 +39,7 @@ def guide_view(request: HttpRequest):
     """
     context = dict()
     if request.user.state == "AP":
-        employee = Employee.objects.get(user_id=request.user.id)
+        employee = Employee.objects.filter(user_id=request.user.id).last()
 
         if not employee.list_read_authorization:
             context["AP"] = True
@@ -115,7 +115,7 @@ class LoginView(FormView):
         해당 권한이 없으면 employee_list로 이동한다.
         """
         if self.request.user.state == "AP":
-            employee = Employee.objects.get(user_id=self.request.user.id)
+            employee = Employee.objects.filter(user_id=self.request.user.id).last()
 
             if employee.signup_approval_authorization:
                 return reverse_lazy("signup_list")
@@ -143,7 +143,7 @@ class SignupListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        employee = Employee.objects.get(user_id=self.request.user.id)
+        employee = Employee.objects.filter(user_id=self.request.user.id).last()
 
         if employee.list_read_authorization:
             context["read_authorization"] = True
@@ -164,7 +164,7 @@ class EmployeeListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        employee = Employee.objects.get(user_id=self.request.user.id)
+        employee = Employee.objects.filter(user_id=self.request.user.id).last()
 
         if employee.signup_approval_authorization:
             context["approval_authorization"] = True
@@ -179,7 +179,7 @@ class EmployeeListView(ListView):
         마스터 등급은 퇴사자 명단을 볼 수 있고, 그 이외 등급은 퇴사자 명단을 볼 수 없도록
         queryset을 구분한다.
         """
-        employee = Employee.objects.get(user_id=self.request.user.id)
+        employee = Employee.objects.filter(user_id=self.request.user.id).last()
         if employee.authorization_grade == "MS":
             queryset = Employee.objects.select_related("user")
         else:
